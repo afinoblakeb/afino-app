@@ -7,10 +7,30 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code');
   
   if (code) {
-    const supabase = createRouteHandlerClient({ cookies });
-    await supabase.auth.exchangeCodeForSession(code);
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    
+    try {
+      // Exchange the code for a session
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      
+      if (error) {
+        console.error('Error exchanging code for session:', error);
+        return NextResponse.redirect(new URL('/auth/signin?error=Authentication%20failed', request.url));
+      }
+      
+      // Check if the user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Successfully authenticated, redirect to dashboard
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    } catch (error) {
+      console.error('Error in auth callback:', error);
+    }
   }
 
-  // Redirect to the dashboard
-  return NextResponse.redirect(new URL('/dashboard', request.url));
+  // If we get here, something went wrong
+  return NextResponse.redirect(new URL('/auth/signin', request.url));
 } 

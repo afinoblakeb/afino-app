@@ -38,6 +38,12 @@ export async function middleware(request: NextRequest) {
   // Check if the request is for a protected route
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard');
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
+  const isCallbackRoute = request.nextUrl.pathname === '/auth/callback';
+
+  // Allow callback route to proceed without redirection
+  if (isCallbackRoute) {
+    return res;
+  }
 
   // If accessing a protected route without a session, redirect to sign in
   if (isProtectedRoute && !session) {
@@ -47,7 +53,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // If accessing auth routes with a session, redirect to dashboard
-  if (isAuthRoute && session) {
+  if (isAuthRoute && session && !isCallbackRoute) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

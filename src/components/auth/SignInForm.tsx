@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 // Form validation schema
@@ -18,10 +18,30 @@ type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [showEmailForm, setShowEmailForm] = useState(false);
+
+  // Check for error parameter in URL
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setFormError(decodeURIComponent(errorParam));
+    }
+    
+    // Check if we're already authenticated
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // If we're already authenticated, redirect to dashboard
+        router.push('/dashboard');
+      }
+    };
+    
+    checkSession();
+  }, [searchParams, router]);
 
   const {
     register,
@@ -53,11 +73,13 @@ export default function SignInForm() {
 
       if (error) {
         setFormError(error.message);
+        setIsGoogleLoading(false);
       }
+      
+      // No need to set loading to false on success as we're redirecting
     } catch (error) {
       setFormError('An unexpected error occurred. Please try again.');
       console.error('Google sign in error:', error);
-    } finally {
       setIsGoogleLoading(false);
     }
   };
@@ -75,6 +97,7 @@ export default function SignInForm() {
 
       if (error) {
         setFormError(error.message);
+        setIsLoading(false);
         return;
       }
 
@@ -85,7 +108,6 @@ export default function SignInForm() {
     } catch (error) {
       setFormError('An unexpected error occurred. Please try again.');
       console.error('Sign in error:', error);
-    } finally {
       setIsLoading(false);
     }
   };
