@@ -1,6 +1,16 @@
-import { PrismaClient, Role } from '@prisma/client';
+// Mock implementation for development
+// This will be replaced with actual Prisma implementation later
 
-const prisma = new PrismaClient();
+/**
+ * Role interface
+ */
+export interface Role {
+  id: string;
+  name: string;
+  permissions: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 /**
  * Default permissions for admin role
@@ -20,108 +30,112 @@ const MEMBER_PERMISSIONS = [
   'view_organization',
 ];
 
+// Mock roles data
+const mockRoles: Role[] = [
+  {
+    id: '1',
+    name: 'Admin',
+    permissions: ADMIN_PERMISSIONS,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '2',
+    name: 'Member',
+    permissions: MEMBER_PERMISSIONS,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+
 /**
- * Gets or creates the admin role.
- * 
- * @returns The admin role
+ * Gets or creates the admin role
  */
 export async function getOrCreateAdminRole(): Promise<Role> {
-  let adminRole = await prisma.role.findUnique({
-    where: { name: 'Admin' },
-  });
+  const adminRole = mockRoles.find(role => role.name === 'Admin');
   
-  if (!adminRole) {
-    adminRole = await prisma.role.create({
-      data: {
-        name: 'Admin',
-        permissions: ADMIN_PERMISSIONS,
-      },
-    });
+  if (adminRole) {
+    return adminRole;
   }
   
-  return adminRole;
+  const newRole: Role = {
+    id: String(mockRoles.length + 1),
+    name: 'Admin',
+    permissions: ADMIN_PERMISSIONS,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  
+  mockRoles.push(newRole);
+  return newRole;
 }
 
 /**
- * Gets or creates the member role.
- * 
- * @returns The member role
+ * Gets or creates the member role
  */
 export async function getOrCreateMemberRole(): Promise<Role> {
-  let memberRole = await prisma.role.findUnique({
-    where: { name: 'Member' },
-  });
+  const memberRole = mockRoles.find(role => role.name === 'Member');
   
-  if (!memberRole) {
-    memberRole = await prisma.role.create({
-      data: {
-        name: 'Member',
-        permissions: MEMBER_PERMISSIONS,
-      },
-    });
+  if (memberRole) {
+    return memberRole;
   }
   
-  return memberRole;
+  const newRole: Role = {
+    id: String(mockRoles.length + 1),
+    name: 'Member',
+    permissions: MEMBER_PERMISSIONS,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  
+  mockRoles.push(newRole);
+  return newRole;
 }
 
 /**
- * Gets a role by ID.
- * 
- * @param id - The role ID
- * @returns The role, or null if not found
+ * Gets a role by ID
  */
 export async function getRoleById(id: string): Promise<Role | null> {
   if (!id) {
     return null;
   }
   
-  return prisma.role.findUnique({
-    where: { id },
-  });
+  return mockRoles.find(role => role.id === id) || null;
 }
 
 /**
- * Gets a role by name.
- * 
- * @param name - The role name
- * @returns The role, or null if not found
+ * Gets a role by name
  */
 export async function getRoleByName(name: string): Promise<Role | null> {
   if (!name) {
     return null;
   }
   
-  return prisma.role.findUnique({
-    where: { name },
-  });
+  return mockRoles.find(role => role.name === name) || null;
 }
 
 /**
- * Creates a new role.
- * 
- * @param name - The role name
- * @param permissions - The role permissions
- * @returns The created role
+ * Creates a new role
  */
 export async function createRole(name: string, permissions: string[]): Promise<Role> {
   if (!name) {
     throw new Error('Role name is required');
   }
   
-  return prisma.role.create({
-    data: {
-      name,
-      permissions,
-    },
-  });
+  const newRole: Role = {
+    id: String(mockRoles.length + 1),
+    name,
+    permissions,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  
+  mockRoles.push(newRole);
+  return newRole;
 }
 
 /**
- * Updates a role.
- * 
- * @param id - The role ID
- * @param data - The data to update
- * @returns The updated role
+ * Updates a role
  */
 export async function updateRole(
   id: string,
@@ -131,24 +145,38 @@ export async function updateRole(
     throw new Error('Role ID is required');
   }
   
-  return prisma.role.update({
-    where: { id },
-    data,
-  });
+  const roleIndex = mockRoles.findIndex(role => role.id === id);
+  
+  if (roleIndex === -1) {
+    throw new Error('Role not found');
+  }
+  
+  const updatedRole = {
+    ...mockRoles[roleIndex],
+    ...data,
+    updatedAt: new Date(),
+  };
+  
+  mockRoles[roleIndex] = updatedRole;
+  return updatedRole;
 }
 
 /**
- * Deletes a role.
- * 
- * @param id - The role ID
- * @returns The deleted role
+ * Deletes a role
  */
 export async function deleteRole(id: string): Promise<Role> {
   if (!id) {
     throw new Error('Role ID is required');
   }
   
-  return prisma.role.delete({
-    where: { id },
-  });
+  const roleIndex = mockRoles.findIndex(role => role.id === id);
+  
+  if (roleIndex === -1) {
+    throw new Error('Role not found');
+  }
+  
+  const deletedRole = mockRoles[roleIndex];
+  mockRoles.splice(roleIndex, 1);
+  
+  return deletedRole;
 } 
