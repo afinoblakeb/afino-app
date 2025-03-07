@@ -28,7 +28,7 @@ export async function getRoleById(id: string): Promise<Role | null> {
     return null;
   }
   
-  return prisma.role.findUnique({
+  return prisma.role.findFirst({
     where: { id },
   });
 }

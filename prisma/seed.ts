@@ -6,7 +6,7 @@ async function main() {
   console.log('Seeding database...');
   
   // Create default roles
-  const adminRole = await prisma.role.findUnique({
+  const adminRole = await prisma.role.findFirst({
     where: { name: 'Admin' },
   });
   
@@ -20,7 +20,7 @@ async function main() {
     console.log('Admin role created');
   }
 
-  const memberRole = await prisma.role.findUnique({
+  const memberRole = await prisma.role.findFirst({
     where: { name: 'Member' },
   });
   
