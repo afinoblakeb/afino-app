@@ -6,23 +6,33 @@ async function main() {
   console.log('Seeding database...');
   
   // Create default roles
-  await prisma.role.upsert({
+  const adminRole = await prisma.role.findUnique({
     where: { name: 'Admin' },
-    update: {},
-    create: {
-      name: 'Admin',
-      permissions: ['manage_users', 'manage_organization', 'manage_roles', 'invite_users', 'view_organization'],
-    },
   });
+  
+  if (!adminRole) {
+    await prisma.role.create({
+      data: {
+        name: 'Admin',
+        permissions: ['manage_users', 'manage_organization', 'manage_roles', 'invite_users', 'view_organization'],
+      },
+    });
+    console.log('Admin role created');
+  }
 
-  await prisma.role.upsert({
+  const memberRole = await prisma.role.findUnique({
     where: { name: 'Member' },
-    update: {},
-    create: {
-      name: 'Member',
-      permissions: ['view_organization'],
-    },
   });
+  
+  if (!memberRole) {
+    await prisma.role.create({
+      data: {
+        name: 'Member',
+        permissions: ['view_organization'],
+      },
+    });
+    console.log('Member role created');
+  }
   
   console.log('Database has been seeded');
 }
