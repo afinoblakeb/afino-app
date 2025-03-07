@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-browser';
 
 // Form validation schema
 const signInSchema = z.object({
@@ -61,15 +61,27 @@ function SignInFormContent() {
     setFormError(null);
 
     try {
-      // Use a simpler approach with fewer options
-      await supabase.auth.signInWithOAuth({
+      // Use a more direct approach for Google sign-in
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            prompt: 'select_account', // Force account selection
+          },
         },
       });
       
+      if (error) {
+        setFormError(`Google sign-in error: ${error.message}`);
+        setIsGoogleLoading(false);
+      }
+      
       // The page will be redirected by Supabase, so we don't need to handle it here
+      // But we'll add a timeout just in case the redirect doesn't happen
+      setTimeout(() => {
+        setIsGoogleLoading(false);
+      }, 10000);
     } catch (error) {
       setFormError('An unexpected error occurred. Please try again.');
       console.error('Google sign in error:', error);
