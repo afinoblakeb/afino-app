@@ -4,10 +4,10 @@ import { findOrganizationByDomain } from '@/services/organizationService';
 
 export async function GET(
   request: Request,
-  { params }: { params: { domain: string } }
+  { params }: { params: Promise<{ domain: string }> }
 ) {
   try {
-    const { domain } = params;
+    const domain = (await params).domain;
     
     if (!domain) {
       return NextResponse.json(
