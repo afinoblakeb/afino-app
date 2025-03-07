@@ -44,6 +44,10 @@ jobs:
           echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> .env
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
 
+      - name: Check environment variables
+        run: npm run check-env
+        continue-on-error: true
+
       - name: Generate Prisma client
         run: npx prisma generate
         continue-on-error: true
