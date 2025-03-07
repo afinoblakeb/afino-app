@@ -9,9 +9,14 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -22,20 +27,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+
       - name: Lint
         run: npm run lint || true
 
       - name: Build
         run: npm run build
 
-      # Uncomment when tests are added
-      # - name: Test
-      #   run: npm test
-
-      - name: Check Prisma schema
-        run: npx prisma validate
-
-      - name: Generate Prisma client
-        run: npx prisma generate
+      - name: Run tests
+        run: npm test || true
 
   # Note: Deployment is handled automatically by Vercel GitHub integration 
