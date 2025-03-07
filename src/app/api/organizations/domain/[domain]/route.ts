@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { findOrganizationByDomain } from '@/services/organizationService';
 
 export async function GET(
@@ -7,23 +7,23 @@ export async function GET(
   { params }: { params: { domain: string } }
 ) {
   try {
-    // Get the authenticated user
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
     const { domain } = params;
     
     if (!domain) {
       return NextResponse.json(
         { error: 'Domain is required' },
         { status: 400 }
+      );
+    }
+    
+    // Get the current user
+    const supabase = createClientComponentClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
     

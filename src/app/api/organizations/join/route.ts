@@ -1,22 +1,21 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
-import { getOrganizationById, addUserToOrganization, isUserInOrganization } from '@/services/organizationService';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { addUserToOrganization, getOrganizationById } from '@/services/organizationService';
 import { getOrCreateMemberRole } from '@/services/roleService';
 
 export async function POST(request: Request) {
   try {
     const { organizationId } = await request.json();
     
-    // Validate input
-    if (!organizationId || typeof organizationId !== 'string') {
+    if (!organizationId) {
       return NextResponse.json(
         { error: 'Organization ID is required' },
         { status: 400 }
       );
     }
     
-    // Get the authenticated user
-    const supabase = await createClient();
+    // Get the current user
+    const supabase = createClientComponentClient();
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -26,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
     
-    // Check if the organization exists
+    // Verify the organization exists
     const organization = await getOrganizationById(organizationId);
     
     if (!organization) {
@@ -36,20 +35,10 @@ export async function POST(request: Request) {
       );
     }
     
-    // Check if the user is already a member of the organization
-    const isMember = await isUserInOrganization(user.id, organizationId);
-    
-    if (isMember) {
-      return NextResponse.json(
-        { error: 'User is already a member of this organization' },
-        { status: 400 }
-      );
-    }
-    
-    // Get the member role
+    // Get member role
     const memberRole = await getOrCreateMemberRole();
     
-    // Add the user to the organization as a member
+    // Add user to organization as member
     await addUserToOrganization(user.id, organizationId, memberRole.id);
     
     return NextResponse.json({ success: true });

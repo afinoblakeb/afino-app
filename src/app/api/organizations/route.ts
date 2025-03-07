@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { createOrganization } from '@/services/organizationService';
 import { getOrCreateAdminRole } from '@/services/roleService';
 import { addUserToOrganization } from '@/services/organizationService';
@@ -9,16 +9,15 @@ export async function POST(request: Request) {
   try {
     const { name, domain } = await request.json();
     
-    // Validate input
-    if (!name || typeof name !== 'string') {
+    if (!name) {
       return NextResponse.json(
         { error: 'Organization name is required' },
         { status: 400 }
       );
     }
     
-    // Get the authenticated user
-    const supabase = await createClient();
+    // Get the current user
+    const supabase = createClientComponentClient();
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -34,10 +33,10 @@ export async function POST(request: Request) {
     // Create the organization
     const organization = await createOrganization(name, orgDomain);
     
-    // Get the admin role
+    // Get admin role
     const adminRole = await getOrCreateAdminRole();
     
-    // Add the user to the organization as an admin
+    // Add user to organization as admin
     await addUserToOrganization(user.id, organization.id, adminRole.id);
     
     return NextResponse.json({ organization });

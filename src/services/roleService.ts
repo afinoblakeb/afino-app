@@ -3,12 +3,30 @@ import { PrismaClient, Role } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
+ * Default permissions for admin role
+ */
+const ADMIN_PERMISSIONS = [
+  'manage_users',
+  'manage_organization',
+  'manage_roles',
+  'invite_users',
+  'view_organization',
+];
+
+/**
+ * Default permissions for member role
+ */
+const MEMBER_PERMISSIONS = [
+  'view_organization',
+];
+
+/**
  * Gets or creates the admin role.
  * 
  * @returns The admin role
  */
 export async function getOrCreateAdminRole(): Promise<Role> {
-  let adminRole = await prisma.role.findFirst({
+  let adminRole = await prisma.role.findUnique({
     where: { name: 'Admin' },
   });
   
@@ -16,7 +34,7 @@ export async function getOrCreateAdminRole(): Promise<Role> {
     adminRole = await prisma.role.create({
       data: {
         name: 'Admin',
-        permissions: ['manage_users', 'manage_organization', 'manage_roles'],
+        permissions: ADMIN_PERMISSIONS,
       },
     });
   }
@@ -30,7 +48,7 @@ export async function getOrCreateAdminRole(): Promise<Role> {
  * @returns The member role
  */
 export async function getOrCreateMemberRole(): Promise<Role> {
-  let memberRole = await prisma.role.findFirst({
+  let memberRole = await prisma.role.findUnique({
     where: { name: 'Member' },
   });
   
@@ -38,7 +56,7 @@ export async function getOrCreateMemberRole(): Promise<Role> {
     memberRole = await prisma.role.create({
       data: {
         name: 'Member',
-        permissions: ['view_organization'],
+        permissions: MEMBER_PERMISSIONS,
       },
     });
   }
@@ -53,6 +71,10 @@ export async function getOrCreateMemberRole(): Promise<Role> {
  * @returns The role, or null if not found
  */
 export async function getRoleById(id: string): Promise<Role | null> {
+  if (!id) {
+    return null;
+  }
+  
   return prisma.role.findUnique({
     where: { id },
   });
@@ -65,7 +87,11 @@ export async function getRoleById(id: string): Promise<Role | null> {
  * @returns The role, or null if not found
  */
 export async function getRoleByName(name: string): Promise<Role | null> {
-  return prisma.role.findFirst({
+  if (!name) {
+    return null;
+  }
+  
+  return prisma.role.findUnique({
     where: { name },
   });
 }
@@ -78,6 +104,10 @@ export async function getRoleByName(name: string): Promise<Role | null> {
  * @returns The created role
  */
 export async function createRole(name: string, permissions: string[]): Promise<Role> {
+  if (!name) {
+    throw new Error('Role name is required');
+  }
+  
   return prisma.role.create({
     data: {
       name,
@@ -97,6 +127,10 @@ export async function updateRole(
   id: string,
   data: Partial<Omit<Role, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<Role> {
+  if (!id) {
+    throw new Error('Role ID is required');
+  }
+  
   return prisma.role.update({
     where: { id },
     data,
@@ -110,6 +144,10 @@ export async function updateRole(
  * @returns The deleted role
  */
 export async function deleteRole(id: string): Promise<Role> {
+  if (!id) {
+    throw new Error('Role ID is required');
+  }
+  
   return prisma.role.delete({
     where: { id },
   });

@@ -6,13 +6,13 @@
 - [x] Set up Prisma ORM
 - [x] Implement UI scaffolding (sidebar, layout)
 - [x] Set up authentication with Supabase (Google OAuth)
-- [ ] Implement user onboarding flow
-  - [ ] Create Prisma schema for users, organizations, and roles
-  - [ ] Implement user profile creation from Google Auth data
-  - [ ] Create organization management services
-  - [ ] Build onboarding UI for organization creation/joining
-  - [ ] Implement API routes for onboarding actions
-  - [ ] Write tests for all onboarding functionality
+- [x] Implement user onboarding flow
+  - [x] Create Prisma schema for users, organizations, and roles
+  - [x] Implement user profile creation from Google Auth data
+  - [x] Create organization management services
+  - [x] Build onboarding UI for organization creation/joining
+  - [x] Implement API routes for onboarding actions
+  - [x] Write tests for domain utility functions
 - [ ] Implement organization creation and management
 - [ ] Implement user invitation and role management
 - [ ] Set up CI/CD pipeline
@@ -29,22 +29,22 @@
 - [ ] Email verification
 
 ### User Management
-- [ ] User profile creation from OAuth data
+- [x] User profile creation from OAuth data
 - [ ] User profile page
 - [ ] User profile editing
 - [ ] User settings
 
 ### Organization Management
-- [ ] Organization creation
+- [x] Organization creation
 - [ ] Organization settings
 - [ ] Organization dashboard
-- [ ] Domain-based organization matching
+- [x] Domain-based organization matching
 
 ### User Invitation and Role Management
 - [ ] Invite users to organization
-- [ ] Role assignment
-- [ ] Permission management
-- [ ] Role-based access control
+- [x] Role assignment
+- [x] Permission management
+- [x] Role-based access control
 
 ### UI Scaffolding
 - [x] Shadcn collapsible sidebar
@@ -55,16 +55,16 @@
 ## Database Setup
 
 - [x] Set up Supabase for authentication
-- [ ] Create Prisma schema for users
-- [ ] Create Prisma schema for organizations
-- [ ] Create Prisma schema for user-organization relationships
-- [ ] Create Prisma schema for roles
-- [ ] Set up initial migrations
+- [x] Create Prisma schema for users
+- [x] Create Prisma schema for organizations
+- [x] Create Prisma schema for user-organization relationships
+- [x] Create Prisma schema for roles
+- [x] Set up initial migrations
 - [ ] Create seed data for testing
 
 ## Testing
 
-- [ ] Unit tests for utilities
+- [x] Unit tests for utilities
 - [ ] Unit tests for services
 - [ ] Integration tests for API routes
 - [ ] Component tests for UI
@@ -74,5 +74,5 @@
 
 - [x] Authentication setup documentation
 - [ ] API documentation
-- [ ] Database schema documentation
-- [ ] User onboarding flow documentation 
+- [x] Database schema documentation
+- [x] User onboarding flow documentation 

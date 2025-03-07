@@ -1,5 +1,6 @@
 import { PrismaClient, Organization, UserOrganization } from '@prisma/client';
-import { extractDomain } from '@/utils/domainUtils';
+import { extractDomain, suggestOrganizationName } from '@/utils/domainUtils';
+import { getOrCreateAdminRole, getOrCreateMemberRole } from './roleService';
 
 const prisma = new PrismaClient();
 
@@ -26,6 +27,10 @@ export async function findOrganizationByDomain(domain: string): Promise<Organiza
  * @returns The organization, or null if not found
  */
 export async function getOrganizationById(id: string): Promise<Organization | null> {
+  if (!id) {
+    return null;
+  }
+  
   return prisma.organization.findUnique({
     where: { id },
   });
@@ -42,6 +47,10 @@ export async function createOrganization(
   name: string,
   domain: string | null = null
 ): Promise<Organization> {
+  if (!name) {
+    throw new Error('Organization name is required');
+  }
+  
   return prisma.organization.create({
     data: {
       name,
@@ -63,6 +72,10 @@ export async function addUserToOrganization(
   organizationId: string,
   roleId: string
 ): Promise<UserOrganization> {
+  if (!userId || !organizationId || !roleId) {
+    throw new Error('User ID, organization ID, and role ID are required');
+  }
+  
   return prisma.userOrganization.create({
     data: {
       userId,
@@ -79,6 +92,10 @@ export async function addUserToOrganization(
  * @returns The organizations the user belongs to
  */
 export async function getUserOrganizations(userId: string) {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+  
   return prisma.userOrganization.findMany({
     where: { userId },
     include: {
@@ -95,6 +112,10 @@ export async function getUserOrganizations(userId: string) {
  * @returns The users in the organization
  */
 export async function getOrganizationUsers(organizationId: string) {
+  if (!organizationId) {
+    throw new Error('Organization ID is required');
+  }
+  
   return prisma.userOrganization.findMany({
     where: { organizationId },
     include: {
@@ -115,6 +136,10 @@ export async function isUserInOrganization(
   userId: string,
   organizationId: string
 ): Promise<boolean> {
+  if (!userId || !organizationId) {
+    return false;
+  }
+  
   const membership = await prisma.userOrganization.findUnique({
     where: {
       userId_organizationId: {
@@ -141,19 +166,19 @@ export async function createOrganizationFromEmail(
   const domain = extractDomain(email);
   
   if (!domain) {
-    throw new Error('Invalid email format');
+    throw new Error('Invalid email address');
   }
   
   // Check if organization with this domain already exists
-  const existingOrg = await findOrganizationByDomain(domain);
+  let organization = await findOrganizationByDomain(domain);
   
-  if (existingOrg) {
-    return { organization: existingOrg, created: false };
+  if (organization) {
+    return { organization, created: false };
   }
   
   // Create new organization
-  const orgName = name || domain.split('.')[0];
-  const organization = await createOrganization(orgName, domain);
+  const orgName = name || suggestOrganizationName(domain);
+  organization = await createOrganization(orgName, domain);
   
   return { organization, created: true };
 } 
