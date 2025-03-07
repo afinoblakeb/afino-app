@@ -5,6 +5,16 @@ import { getOrCreateAdminRoleForOrganization, getOrCreateMemberRoleForOrganizati
 const prisma = new PrismaClient();
 
 /**
+ * Generates a slug from a name
+ */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+/**
  * Finds an organization by domain
  */
 export async function findOrganizationByDomain(domain: string): Promise<Organization | null> {
@@ -31,20 +41,38 @@ export async function getOrganizationById(id: string): Promise<Organization | nu
 }
 
 /**
+ * Gets an organization by slug
+ */
+export async function getOrganizationBySlug(slug: string): Promise<Organization | null> {
+  if (!slug) {
+    return null;
+  }
+  
+  return prisma.organization.findUnique({
+    where: { slug },
+  });
+}
+
+/**
  * Creates a new organization
  */
 export async function createOrganization(
   name: string,
-  domain: string | null = null
+  domain: string | null = null,
+  slug?: string
 ): Promise<Organization> {
   if (!name) {
     throw new Error('Organization name is required');
   }
   
+  // Generate slug if not provided
+  const orgSlug = slug || generateSlug(name);
+  
   const organization = await prisma.organization.create({
     data: {
       name,
       domain,
+      slug: orgSlug,
     },
   });
   
@@ -153,7 +181,8 @@ export async function createOrganizationFromEmail(
   
   // Create new organization
   const orgName = name || suggestOrganizationName(domain);
-  organization = await createOrganization(orgName, domain);
+  const slug = generateSlug(orgName);
+  organization = await createOrganization(orgName, domain, slug);
   
   return { organization, created: true };
 } 

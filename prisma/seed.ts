@@ -16,6 +16,7 @@ async function main() {
     const newSystemOrg = await prisma.organization.create({
       data: {
         name: 'System',
+        slug: 'system',
       },
     });
     systemOrgId = newSystemOrg.id;
