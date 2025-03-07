@@ -53,6 +53,51 @@ This repository is organized as a monorepo:
    npm run dev
    ```
 
+## Ensuring Build Parity with Vercel
+
+To ensure that code that builds successfully locally will also build successfully on Vercel, we've implemented several measures:
+
+### Pre-build Prisma Generation
+
+Our build script automatically regenerates Prisma types before building:
+
+```bash
+npm run build  # Runs prisma generate && next build
+```
+
+### Verify Build Parity
+
+Before pushing changes, run the verify-build-parity script to simulate a Vercel build:
+
+```bash
+npm run verify-build-parity
+```
+
+This script:
+1. Validates the Prisma schema
+2. Regenerates the Prisma client
+3. Performs a clean install of dependencies
+4. Runs TypeScript type checking
+5. Runs ESLint
+6. Runs the build process
+
+### Pre-commit Hooks
+
+We use Husky to run pre-commit checks that ensure code quality:
+- TypeScript type checking
+- ESLint
+- Prettier
+- Prisma schema validation
+- Prisma client generation
+
+### Vercel-specific Build Command
+
+We use a custom build command on Vercel that ensures Prisma is properly set up:
+
+```bash
+npm run vercel-build  # Runs prisma generate && prisma migrate deploy && next build
+```
+
 ## Key Development Requirements
 
 - **UI Component Library**: Use Shadcn UI components for consistent design
