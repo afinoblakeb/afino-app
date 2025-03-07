@@ -10,12 +10,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
+
+interface Organization {
+  id: string;
+  name: string;
+  domain: string | null;
+}
 
 export default function OnboardingPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [organizationName, setOrganizationName] = useState('');
-  const [existingOrganization, setExistingOrganization] = useState<any>(null);
+  const [existingOrganization, setExistingOrganization] = useState<Organization | null>(null);
   const [activeTab, setActiveTab] = useState('create');
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
@@ -99,7 +106,7 @@ export default function OnboardingPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          organizationId: existingOrganization.id,
+          organizationId: existingOrganization?.id,
         }),
       });
       
@@ -134,7 +141,7 @@ export default function OnboardingPage() {
           <CardTitle>Welcome to Afino</CardTitle>
           <CardDescription>
             {user?.email && (
-              <span>You're signed in as <strong>{user.email}</strong></span>
+              <span>You&apos;re signed in as <strong>{user.email}</strong></span>
             )}
           </CardDescription>
         </CardHeader>

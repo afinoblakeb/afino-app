@@ -1,6 +1,5 @@
 import { PrismaClient, Organization, UserOrganization } from '@prisma/client';
 import { extractDomain, suggestOrganizationName } from '@/utils/domainUtils';
-import { getOrCreateAdminRole, getOrCreateMemberRole } from './roleService';
 
 const prisma = new PrismaClient();
 
