@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  fullName     String         @map("full_name")
+  avatarUrl    String?        @map("avatar_url")
+  phoneNumber  String?        @map("phone_number")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  profile      UserProfile?
+  members      Member[]
+  invitations  Invitation[]   @relation("InvitedBy")
+
+  @@map("users")
+}
+
+model UserProfile {
+  id           String         @id @default(uuid())
+  userId       String         @unique @map("user_id")
+  bio          String?
+  location     String?
+  preferences  Json           @default("{}")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Organization {
+  id           String         @id @default(uuid())
+  name         String
+  slug         String         @unique
+  logoUrl      String?        @map("logo_url")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  members      Member[]
+  roles        Role[]
+  invitations  Invitation[]
+
+  @@map("organizations")
+}
+
+model Role {
+  id             String         @id @default(uuid())
+  name           String
+  organizationId String         @map("organization_id")
+  permissions    Json           @default("{}")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members        Member[]
+  invitations    Invitation[]
+
+  @@unique([organizationId, name])
+  @@map("roles")
+}
+
+model Member {
+  id             String         @id @default(uuid())
+  organizationId String         @map("organization_id")
+  userId         String         @map("user_id")
+  roleId         String         @map("role_id")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId])
+  @@map("members")
+}
+
+model Invitation {
+  id             String         @id @default(uuid())
+  email          String
+  organizationId String         @map("organization_id")
+  roleId         String         @map("role_id")
+  token          String         @unique
+  expiresAt      DateTime       @map("expires_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  
+  // Relations
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  invitedBy      User?          @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedById    String?        @map("invited_by_id")
+
+  @@unique([organizationId, email])
+  @@map("invitations")
+}
