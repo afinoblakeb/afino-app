@@ -32,6 +32,7 @@ model Organization {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   users       UserOrganization[]
+  roles       Role[]
 }
 
 model UserOrganization {
@@ -50,9 +51,13 @@ model UserOrganization {
 
 model Role {
   id               String             @id @default(uuid())
-  name             String             @unique
+  name             String
+  organizationId   String
   permissions      String[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  organization     Organization       @relation(fields: [organizationId], references: [id])
   userOrganizations UserOrganization[]
+
+  @@unique([organizationId, name])
 }

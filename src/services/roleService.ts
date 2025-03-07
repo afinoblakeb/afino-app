@@ -1,4 +1,5 @@
 import { PrismaClient, Role } from '@prisma/client';
+import { RoleWhereInput } from '@/types/prisma';
 
 const prisma = new PrismaClient();
 
@@ -29,7 +30,7 @@ export async function getRoleById(id: string): Promise<Role | null> {
   }
   
   return prisma.role.findFirst({
-    where: { id },
+    where: { id } as RoleWhereInput,
   });
 }
 
@@ -42,7 +43,7 @@ export async function getRoleByName(name: string): Promise<Role | null> {
   }
   
   return prisma.role.findFirst({
-    where: { name },
+    where: { name } as RoleWhereInput,
   });
 }
 
@@ -81,7 +82,8 @@ export async function getOrCreateAdminRole(): Promise<Role> {
     data: {
       name: 'Admin',
       permissions: ADMIN_PERMISSIONS,
-    },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
   });
 }
 
@@ -99,7 +101,8 @@ export async function getOrCreateMemberRole(): Promise<Role> {
     data: {
       name: 'Member',
       permissions: MEMBER_PERMISSIONS,
-    },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
   });
 }
 
@@ -115,7 +118,8 @@ export async function createRole(name: string, permissions: string[]): Promise<R
     data: {
       name,
       permissions,
-    },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
   });
 }
 
