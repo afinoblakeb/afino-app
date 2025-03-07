@@ -3,10 +3,11 @@ import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
-  // Skip middleware for callback route and related paths
-  if (request.nextUrl.pathname === '/auth/callback' || 
-      request.nextUrl.pathname.startsWith('/_next/') ||
-      request.nextUrl.pathname.includes('.')) {
+  // Skip middleware for static assets, API routes, and auth callback
+  if (request.nextUrl.pathname.startsWith('/_next/') ||
+      request.nextUrl.pathname.includes('.') ||
+      request.nextUrl.pathname.startsWith('/api/') ||
+      request.nextUrl.pathname === '/auth/callback') {
     return NextResponse.next();
   }
 
@@ -48,8 +49,16 @@ export async function middleware(request: NextRequest) {
     const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard');
     const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
 
-    // If accessing a protected route without a session, redirect to sign in
+    // Special handling for the dashboard route with hash fragments
     if (isProtectedRoute && !session) {
+      // Check if there's a hash fragment in the URL (this would happen with implicit flow)
+      const url = request.url;
+      if (url.includes('#access_token=')) {
+        // Allow this request to proceed - the client-side code will handle the token
+        return res;
+      }
+
+      // Otherwise redirect to sign in
       const redirectUrl = new URL('/auth/signin', request.url);
       redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
       return NextResponse.redirect(redirectUrl);

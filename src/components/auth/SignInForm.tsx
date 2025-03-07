@@ -42,6 +42,20 @@ function SignInFormContent() {
     };
     
     checkSession();
+
+    // Check for hash fragment with access_token (implicit flow)
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token=')) {
+        // We have an access token in the URL, let's process it
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            // We have a session, redirect to dashboard
+            router.push('/dashboard');
+          }
+        });
+      }
+    }
   }, [searchParams, router]);
 
   const {
@@ -61,14 +75,15 @@ function SignInFormContent() {
     setFormError(null);
 
     try {
-      // Use a more direct approach for Google sign-in
+      // Use the implicit flow directly
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/dashboard`,
           queryParams: {
             prompt: 'select_account', // Force account selection
           },
+          skipBrowserRedirect: false,
         },
       });
       
