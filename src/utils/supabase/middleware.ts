@@ -1,13 +1,15 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function updateSession(request: NextRequest) {
+  // Create a response object
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
+  // Create a Supabase client for server-side operations
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,6 +19,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
+          // If the cookie is updated, update the cookies for the request and response
           request.cookies.set({
             name,
             value,
@@ -34,6 +37,7 @@ export async function middleware(request: NextRequest) {
           })
         },
         remove(name: string, options: CookieOptions) {
+          // If the cookie is removed, update the cookies for the request and response
           request.cookies.delete(name)
           response = NextResponse.next({
             request: {
@@ -56,19 +60,33 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   
-  // If the user is signed in and the current path is /auth/signin or /auth/signup, redirect the user to /dashboard
-  if (session && (path === '/auth/signin' || path === '/auth/signup')) {
+  // Define public routes that don't require authentication
+  const isAuthRoute = path.startsWith('/auth')
+  const isPublicRoute = isAuthRoute || path === '/'
+
+  // If this is the callback URL from Google OAuth, allow it to proceed
+  if (path === '/auth/callback') {
+    return response
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (session && isAuthRoute) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // If the user is not signed in and the current path is /dashboard, redirect the user to /auth/signin
-  if (!session && path === '/dashboard') {
+  // Redirect unauthenticated users to sign in page
+  if (!session && !isPublicRoute) {
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
-  return response
-}
+  // Redirect root to dashboard for authenticated users, or to signin for unauthenticated
+  if (path === '/') {
+    if (session) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    } else {
+      return NextResponse.redirect(new URL('/auth/signin', request.url))
+    }
+  }
 
-export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.svg).*)'],
+  return response
 } 

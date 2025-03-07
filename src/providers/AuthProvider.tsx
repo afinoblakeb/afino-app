@@ -1,9 +1,9 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase-browser';
-import type { User, Session } from '@supabase/supabase-js';
 
 type AuthContextType = {
   user: User | null;
@@ -15,21 +15,57 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  // Check for hash fragment in URL (from OAuth redirect)
+  useEffect(() => {
+    const checkHashFragment = async () => {
+      if (typeof window !== 'undefined' && window.location.hash) {
+        try {
+          // Let Supabase handle the hash fragment
+          const { data } = await supabase.auth.getSession();
+          
+          if (data.session) {
+            // Explicitly set the session in cookies
+            await supabase.auth.setSession({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+            });
+            
+            // Clear the hash fragment
+            window.location.hash = '';
+            
+            // Force a hard reload to ensure cookies are properly set
+            window.location.href = '/dashboard';
+          }
+        } catch {
+          // Handle error silently
+        }
+      }
+    };
+    
+    checkHashFragment();
+  }, []);
 
   useEffect(() => {
-    // Get session on initial load
     const getSession = async () => {
       setIsLoading(true);
+      
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user ?? null);
-      } catch (error) {
-        console.error('Error getting session:', error);
+        const { data } = await supabase.auth.getSession();
+        
+        setSession(data.session);
+        setUser(data.session?.user || null);
+        
+        // If we have a session but are on an auth page, redirect to dashboard
+        if (data.session && window.location.pathname.startsWith('/auth')) {
+          router.push('/dashboard');
+        }
+      } catch {
+        // Handle error silently
       } finally {
         setIsLoading(false);
       }
@@ -37,26 +73,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getSession();
 
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(session?.user || null);
         setIsLoading(false);
+        
+        // Handle redirect after sign in
+        if (event === 'SIGNED_IN' && session) {
+          router.push('/dashboard');
+        } else if (event === 'SIGNED_OUT') {
+          router.push('/auth/signin');
+        }
       }
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [router]);
 
   const signOut = async () => {
+    setIsLoading(true);
+    
     try {
       await supabase.auth.signOut();
-      router.push('/auth/signin');
-    } catch (error) {
-      console.error('Error signing out:', error);
+      
+      setSession(null);
+      setUser(null);
+      
+      // Force a reload to clear any cached state
+      window.location.href = '/auth/signin';
+    } catch {
+      // Handle error silently
+    } finally {
+      setIsLoading(false);
     }
   };
 

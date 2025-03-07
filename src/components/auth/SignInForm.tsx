@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase-browser';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 // Form validation schema
 const signInSchema = z.object({
@@ -16,47 +16,12 @@ const signInSchema = z.object({
 
 type SignInFormValues = z.infer<typeof signInSchema>;
 
-// Separate component that uses useSearchParams
-function SignInFormContent() {
+export default function SignInForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [showEmailForm, setShowEmailForm] = useState(false);
-
-  // Check for error parameter in URL
-  useEffect(() => {
-    const errorParam = searchParams.get('error');
-    if (errorParam) {
-      setFormError(decodeURIComponent(errorParam));
-    }
-    
-    // Check if we're already authenticated
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // If we're already authenticated, redirect to dashboard
-        router.push('/dashboard');
-      }
-    };
-    
-    checkSession();
-
-    // Check for hash fragment with access_token (implicit flow)
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      if (hash && hash.includes('access_token=')) {
-        // We have an access token in the URL, let's process it
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session) {
-            // We have a session, redirect to dashboard
-            router.push('/dashboard');
-          }
-        });
-      }
-    }
-  }, [searchParams, router]);
 
   const {
     register,
@@ -75,31 +40,21 @@ function SignInFormContent() {
     setFormError(null);
 
     try {
-      // Use the implicit flow directly
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-          queryParams: {
-            prompt: 'select_account', // Force account selection
-          },
-          skipBrowserRedirect: false,
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         },
       });
-      
+
       if (error) {
-        setFormError(`Google sign-in error: ${error.message}`);
+        setFormError(error.message);
         setIsGoogleLoading(false);
       }
-      
-      // The page will be redirected by Supabase, so we don't need to handle it here
-      // But we'll add a timeout just in case the redirect doesn't happen
-      setTimeout(() => {
-        setIsGoogleLoading(false);
-      }, 10000);
-    } catch (error) {
+      // The redirect will be handled by Supabase
+    } catch {
       setFormError('An unexpected error occurred. Please try again.');
-      console.error('Google sign in error:', error);
       setIsGoogleLoading(false);
     }
   };
@@ -109,6 +64,7 @@ function SignInFormContent() {
     setFormError(null);
 
     try {
+      const supabase = createClient();
       // Sign in with Supabase
       const { data: userData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
@@ -124,10 +80,10 @@ function SignInFormContent() {
       if (userData?.user) {
         // Redirect to dashboard on successful sign-in
         router.push('/dashboard');
+        router.refresh();
       }
-    } catch (error) {
+    } catch {
       setFormError('An unexpected error occurred. Please try again.');
-      console.error('Sign in error:', error);
       setIsLoading(false);
     }
   };
@@ -289,24 +245,5 @@ function SignInFormContent() {
         </p>
       </div>
     </div>
-  );
-}
-
-// Main component with Suspense
-export default function SignInForm() {
-  return (
-    <Suspense fallback={
-      <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-lg shadow-md">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Sign In</h1>
-          <p className="text-gray-600 mt-2">Loading...</p>
-        </div>
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    }>
-      <SignInFormContent />
-    </Suspense>
   );
 } 
