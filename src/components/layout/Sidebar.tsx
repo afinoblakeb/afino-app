@@ -14,6 +14,7 @@ import {
   Briefcase,
   Mail,
   Shield,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,6 +40,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/providers/AuthProvider';
 
 type Organization = {
   id: string;
@@ -79,6 +81,7 @@ export function AppSidebar({
   currentOrganization,
   user,
 }: SidebarProps) {
+  const { signOut } = useAuth();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     'Main Section': true,
     'Secondary Section': false,
@@ -236,6 +239,11 @@ export function AppSidebar({
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>User Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
