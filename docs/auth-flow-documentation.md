@@ -64,6 +64,57 @@ Supabase was using the implicit OAuth flow (with hash fragments like `#access_to
 
 Despite multiple attempts to fix the authentication flow, users are still not being redirected to the dashboard after successful Google authentication. The flow has become increasingly complex with each attempted fix, potentially making it harder to diagnose and resolve the core issue.
 
+## Files Related to Authentication Flow
+
+### Core Authentication Files
+
+1. **Supabase Client Setup**:
+   - [`src/lib/supabase.ts`](../src/lib/supabase.ts) - Main Supabase client export
+   - [`src/lib/supabase-browser.ts`](../src/lib/supabase-browser.ts) - Browser-side Supabase client
+   - [`src/lib/supabase-server.ts`](../src/lib/supabase-server.ts) - Server-side Supabase client
+
+2. **Authentication Provider**:
+   - [`src/providers/AuthProvider.tsx`](../src/providers/AuthProvider.tsx) - Context provider for authentication state
+
+3. **Middleware**:
+   - [`src/middleware.ts`](../src/middleware.ts) - Next.js middleware for route protection
+
+4. **Authentication Pages**:
+   - [`src/app/auth/layout.tsx`](../src/app/auth/layout.tsx) - Layout for authentication pages
+   - [`src/app/auth/signin/page.tsx`](../src/app/auth/signin/page.tsx) - Sign-in page
+   - [`src/app/auth/signup/page.tsx`](../src/app/auth/signup/page.tsx) - Sign-up page
+   - [`src/app/auth/forgot-password/page.tsx`](../src/app/auth/forgot-password/page.tsx) - Forgot password page
+   - [`src/app/auth/reset-password/page.tsx`](../src/app/auth/reset-password/page.tsx) - Reset password page
+   - [`src/app/auth/verify/page.tsx`](../src/app/auth/verify/page.tsx) - Email verification page
+   - [`src/app/auth/callback/route.ts`](../src/app/auth/callback/route.ts) - OAuth callback route handler
+
+5. **Authentication Components**:
+   - [`src/components/auth/SignInForm.tsx`](../src/components/auth/SignInForm.tsx) - Sign-in form component
+   - [`src/components/auth/SignUpForm.tsx`](../src/components/auth/SignUpForm.tsx) - Sign-up form component
+   - [`src/components/auth/ForgotPasswordForm.tsx`](../src/components/auth/ForgotPasswordForm.tsx) - Forgot password form
+   - [`src/components/auth/ResetPasswordForm.tsx`](../src/components/auth/ResetPasswordForm.tsx) - Reset password form
+
+6. **Tests**:
+   - [`src/components/auth/__tests__/SignInForm.test.tsx`](../src/components/auth/__tests__/SignInForm.test.tsx) - Tests for sign-in form
+   - [`src/components/auth/__tests__/SignUpForm.test.tsx`](../src/components/auth/__tests__/SignUpForm.test.tsx) - Tests for sign-up form
+   - [`src/components/auth/__tests__/ForgotPasswordForm.test.tsx`](../src/components/auth/__tests__/ForgotPasswordForm.test.tsx) - Tests for forgot password form
+   - [`src/components/auth/__tests__/ResetPasswordForm.test.tsx`](../src/components/auth/__tests__/ResetPasswordForm.test.tsx) - Tests for reset password form
+
+7. **Documentation**:
+   - [`project-docs/docs/feature-plans/feature-plan-authentication.md`](../project-docs/docs/feature-plans/feature-plan-authentication.md) - Authentication feature plan
+   - [`docs/auth-flow-documentation.md`](../docs/auth-flow-documentation.md) - This documentation file
+
+### Related Files
+
+1. **Dashboard Pages** (protected by authentication):
+   - [`src/app/(dashboard)/dashboard/page.tsx`](../src/app/(dashboard)/dashboard/page.tsx) - Dashboard page
+   - [`src/app/(dashboard)/layout.tsx`](../src/app/(dashboard)/layout.tsx) - Dashboard layout
+
+2. **UI Components** (used in authentication):
+   - [`src/components/ui/button.tsx`](../src/components/ui/button.tsx) - Button component
+   - [`src/components/ui/input.tsx`](../src/components/ui/input.tsx) - Input component
+   - [`src/components/ui/form.tsx`](../src/components/ui/form.tsx) - Form component
+
 ## Recommendations
 
 1. **Simplify the Authentication Flow**:
