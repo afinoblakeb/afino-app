@@ -1,5 +1,7 @@
+import { PrismaClient, User as PrismaUser } from '@prisma/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { UserOrganization } from './organizationService';
+
+const prisma = new PrismaClient();
 
 /**
  * User interface
@@ -26,17 +28,23 @@ interface SupabaseUserMetadata {
   avatar_url?: string;
 }
 
-// Mock users data
-const mockUsers: User[] = [];
-
 /**
  * Creates a user profile from Supabase Auth data
  */
-export async function createUserProfile(supabaseUser: SupabaseUser): Promise<User> {
+export async function createUserProfile(supabaseUser: SupabaseUser): Promise<PrismaUser> {
   const { id, email, user_metadata } = supabaseUser;
   
   if (!email) {
     throw new Error('Email is required to create a user profile');
+  }
+  
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { id },
+  });
+  
+  if (existingUser) {
+    return existingUser;
   }
   
   const metadata = user_metadata as SupabaseUserMetadata;
@@ -46,40 +54,37 @@ export async function createUserProfile(supabaseUser: SupabaseUser): Promise<Use
   const firstName = metadata.first_name || name.split(' ')[0] || '';
   const lastName = metadata.last_name || (name.split(' ').length > 1 ? name.split(' ').slice(1).join(' ') : '') || '';
   
-  // Check if user already exists
-  const existingUser = mockUsers.find(user => user.id === id);
-  if (existingUser) {
-    return existingUser;
-  }
+  // Create user in our database
+  const user = await prisma.user.create({
+    data: {
+      id,
+      email,
+      name,
+      firstName,
+      lastName,
+      avatarUrl: metadata.avatar_url,
+    },
+  });
   
-  // Create new user
-  const newUser: User = {
-    id,
-    email,
-    name: name || null,
-    firstName: firstName || null,
-    lastName: lastName || null,
-    avatarUrl: metadata.avatar_url || null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-  
-  mockUsers.push(newUser);
-  return newUser;
+  return user;
 }
 
 /**
  * Gets a user by ID
  */
-export async function getUserById(id: string): Promise<User | null> {
-  return mockUsers.find(user => user.id === id) || null;
+export async function getUserById(id: string): Promise<PrismaUser | null> {
+  return prisma.user.findUnique({
+    where: { id },
+  });
 }
 
 /**
  * Gets a user by email
  */
-export async function getUserByEmail(email: string): Promise<User | null> {
-  return mockUsers.find(user => user.email === email) || null;
+export async function getUserByEmail(email: string): Promise<PrismaUser | null> {
+  return prisma.user.findUnique({
+    where: { email },
+  });
 }
 
 /**
@@ -87,37 +92,27 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  */
 export async function updateUserProfile(
   id: string,
-  data: Partial<Omit<User, 'id' | 'email' | 'createdAt' | 'updatedAt'>>
-): Promise<User> {
-  const userIndex = mockUsers.findIndex(user => user.id === id);
-  
-  if (userIndex === -1) {
-    throw new Error('User not found');
-  }
-  
-  const updatedUser = {
-    ...mockUsers[userIndex],
-    ...data,
-    updatedAt: new Date(),
-  };
-  
-  mockUsers[userIndex] = updatedUser;
-  return updatedUser;
+  data: Partial<Omit<PrismaUser, 'id' | 'email' | 'createdAt' | 'updatedAt'>>
+): Promise<PrismaUser> {
+  return prisma.user.update({
+    where: { id },
+    data,
+  });
 }
 
 /**
  * Gets a user with their organizations
  */
-export async function getUserWithOrganizations(id: string): Promise<User & { organizations: UserOrganization[] } | null> {
-  const user = await getUserById(id);
-  
-  if (!user) {
-    return null;
-  }
-  
-  // This is a mock implementation, so we'll return an empty array of organizations
-  return {
-    ...user,
-    organizations: [],
-  };
+export async function getUserWithOrganizations(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    include: {
+      organizations: {
+        include: {
+          organization: true,
+          role: true,
+        },
+      },
+    },
+  });
 } 

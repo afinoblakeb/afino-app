@@ -1,50 +1,7 @@
+import { PrismaClient, Organization, UserOrganization } from '@prisma/client';
 import { extractDomain, suggestOrganizationName } from '@/utils/domainUtils';
 
-// Mock types
-export interface Organization {
-  id: string;
-  name: string;
-  domain: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface UserOrganization {
-  id: string;
-  userId: string;
-  organizationId: string;
-  roleId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  organization: Organization;
-  role: {
-    id: string;
-    name: string;
-    permissions: string[];
-    createdAt: Date;
-    updatedAt: Date;
-  };
-}
-
-// Mock data
-const mockOrganizations: Organization[] = [
-  {
-    id: '1',
-    name: 'Acme Inc',
-    domain: 'acme.com',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '2',
-    name: 'Example Corp',
-    domain: 'example.com',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const mockUserOrganizations: UserOrganization[] = [];
+const prisma = new PrismaClient();
 
 /**
  * Finds an organization by domain
@@ -54,7 +11,9 @@ export async function findOrganizationByDomain(domain: string): Promise<Organiza
     return null;
   }
   
-  return mockOrganizations.find(org => org.domain === domain) || null;
+  return prisma.organization.findUnique({
+    where: { domain },
+  });
 }
 
 /**
@@ -65,7 +24,9 @@ export async function getOrganizationById(id: string): Promise<Organization | nu
     return null;
   }
   
-  return mockOrganizations.find(org => org.id === id) || null;
+  return prisma.organization.findUnique({
+    where: { id },
+  });
 }
 
 /**
@@ -79,16 +40,12 @@ export async function createOrganization(
     throw new Error('Organization name is required');
   }
   
-  const newOrg: Organization = {
-    id: String(mockOrganizations.length + 1),
-    name,
-    domain,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-  
-  mockOrganizations.push(newOrg);
-  return newOrg;
+  return prisma.organization.create({
+    data: {
+      name,
+      domain,
+    },
+  });
 }
 
 /**
@@ -103,52 +60,47 @@ export async function addUserToOrganization(
     throw new Error('User ID, organization ID, and role ID are required');
   }
   
-  const organization = await getOrganizationById(organizationId);
-  if (!organization) {
-    throw new Error('Organization not found');
-  }
-  
-  const userOrg: UserOrganization = {
-    id: String(mockUserOrganizations.length + 1),
-    userId,
-    organizationId,
-    roleId,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    organization,
-    role: {
-      id: roleId,
-      name: roleId === '1' ? 'Admin' : 'Member',
-      permissions: roleId === '1' ? ['manage_users', 'manage_organization'] : ['view_organization'],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  return prisma.userOrganization.create({
+    data: {
+      userId,
+      organizationId,
+      roleId,
     },
-  };
-  
-  mockUserOrganizations.push(userOrg);
-  return userOrg;
+  });
 }
 
 /**
  * Gets all organizations a user belongs to
  */
-export async function getUserOrganizations(userId: string): Promise<UserOrganization[]> {
+export async function getUserOrganizations(userId: string) {
   if (!userId) {
     throw new Error('User ID is required');
   }
   
-  return mockUserOrganizations.filter(userOrg => userOrg.userId === userId);
+  return prisma.userOrganization.findMany({
+    where: { userId },
+    include: {
+      organization: true,
+      role: true,
+    },
+  });
 }
 
 /**
  * Gets all users in an organization
  */
-export async function getOrganizationUsers(organizationId: string): Promise<UserOrganization[]> {
+export async function getOrganizationUsers(organizationId: string) {
   if (!organizationId) {
     throw new Error('Organization ID is required');
   }
   
-  return mockUserOrganizations.filter(userOrg => userOrg.organizationId === organizationId);
+  return prisma.userOrganization.findMany({
+    where: { organizationId },
+    include: {
+      user: true,
+      role: true,
+    },
+  });
 }
 
 /**
@@ -162,9 +114,14 @@ export async function isUserInOrganization(
     return false;
   }
   
-  return mockUserOrganizations.some(
-    userOrg => userOrg.userId === userId && userOrg.organizationId === organizationId
-  );
+  const membership = await prisma.userOrganization.findFirst({
+    where: {
+      userId,
+      organizationId,
+    },
+  });
+  
+  return !!membership;
 }
 
 /**

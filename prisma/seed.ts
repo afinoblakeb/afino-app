@@ -5,8 +5,24 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database...');
   
-  // We'll implement proper seeding later
-  // For now, we'll just log that seeding is complete
+  // Create default roles
+  await prisma.role.upsert({
+    where: { name: 'Admin' },
+    update: {},
+    create: {
+      name: 'Admin',
+      permissions: ['manage_users', 'manage_organization', 'manage_roles', 'invite_users', 'view_organization'],
+    },
+  });
+
+  await prisma.role.upsert({
+    where: { name: 'Member' },
+    update: {},
+    create: {
+      name: 'Member',
+      permissions: ['view_organization'],
+    },
+  });
   
   console.log('Database has been seeded');
 }
