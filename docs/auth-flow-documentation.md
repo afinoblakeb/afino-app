@@ -115,6 +115,64 @@ Despite multiple attempts to fix the authentication flow, users are still not be
    - [`src/components/ui/input.tsx`](../src/components/ui/input.tsx) - Input component
    - [`src/components/ui/form.tsx`](../src/components/ui/form.tsx) - Form component
 
+## Rollback Plan
+
+To address the current issues with the authentication flow, a clean rollback is necessary before implementing a new solution. Here's a step-by-step plan to revert to a clean state:
+
+### 1. Git Rollback
+
+Create a new branch from a point before the problematic changes were introduced:
+
+```bash
+# Create a new branch from a specific commit before the auth changes
+git checkout -b auth-clean-slate <commit-hash-before-auth-changes>
+
+# Or create a new branch from main and reset to a previous state
+git checkout -b auth-clean-slate
+git reset --hard <commit-hash-before-auth-changes>
+```
+
+### 2. Files to Remove or Revert
+
+1. **Remove Split Supabase Client Files**:
+   - Remove `src/lib/supabase-browser.ts`
+   - Remove `src/lib/supabase-server.ts`
+   - Revert `src/lib/supabase.ts` to its original state
+
+2. **Revert Middleware Changes**:
+   - Simplify `src/middleware.ts` to its original state or implement a minimal version
+
+3. **Remove Callback Route**:
+   - Remove `src/app/auth/callback/route.ts` if it's not needed in the new approach
+
+4. **Simplify Authentication Components**:
+   - Revert complex changes in `src/components/auth/SignInForm.tsx`
+   - Remove unnecessary Suspense boundaries and hash fragment handling
+
+### 3. Simplified Authentication Approach
+
+After rolling back, implement a simplified authentication approach:
+
+1. **Single Supabase Client**:
+   - Use a single Supabase client configuration
+   - Follow Supabase's recommended patterns for Next.js
+
+2. **Minimal Middleware**:
+   - Implement only essential route protection
+   - Avoid complex conditional logic
+
+3. **Direct OAuth Flow**:
+   - Use Supabase's recommended OAuth flow
+   - Test thoroughly with the specific provider (Google)
+
+### 4. Testing the Rollback
+
+Before proceeding with new implementation:
+
+1. Verify that the codebase builds successfully
+2. Test basic navigation without authentication
+3. Ensure there are no lingering references to removed files
+
 ## Testing Recommendations
 
 Adding comprehensive testing for the authentication flow is crucial to ensure reliability and prevent regressions. Here's a recommended testing strategy:
@@ -198,5 +256,10 @@ Implementing these testing strategies would help identify issues earlier, provid
    - Create a robust mocking strategy for Supabase
 
 ## Next Steps
+
+1. **Execute the Rollback Plan** to revert to a clean state
+2. **Implement a Simplified Authentication Approach** based on Supabase's recommended patterns
+3. **Add Comprehensive Testing** to ensure the new implementation works correctly
+4. **Document the New Approach** for future reference
 
 Before proceeding with further changes, a thorough review of the current implementation is recommended to identify the core issues and determine the best path forward. Implementing a comprehensive test suite should be a priority to ensure the stability of any new authentication solution. 
