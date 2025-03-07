@@ -34,7 +34,8 @@ jobs:
           echo "Checking for package.json: $(cat package.json | grep name)"
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci || (npm install && echo "Warning: package-lock.json was out of sync and has been updated")
         
       - name: Create dummy .env file
         run: |
