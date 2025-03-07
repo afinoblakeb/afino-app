@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { addUserToOrganization, getOrganizationById } from '@/services/organizationService';
-import { getOrCreateMemberRole } from '@/services/roleService';
+import { getOrCreateMemberRoleForOrganization } from '@/services/roleService';
 
 export async function POST(request: Request) {
   try {
@@ -35,8 +35,8 @@ export async function POST(request: Request) {
       );
     }
     
-    // Get member role
-    const memberRole = await getOrCreateMemberRole();
+    // Get member role for this organization
+    const memberRole = await getOrCreateMemberRoleForOrganization(organizationId);
     
     // Add user to organization as member
     await addUserToOrganization(user.id, organizationId, memberRole.id);

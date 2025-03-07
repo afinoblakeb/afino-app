@@ -1,5 +1,4 @@
 import { PrismaClient, Role } from '@prisma/client';
-import { RoleWhereInput } from '@/types/prisma';
 
 const prisma = new PrismaClient();
 
@@ -30,49 +29,58 @@ export async function getRoleById(id: string): Promise<Role | null> {
   }
   
   return prisma.role.findFirst({
-    where: { id } as RoleWhereInput,
+    where: { id },
   });
 }
 
 /**
- * Gets a role by name
+ * Gets a role by name and organization ID
  */
-export async function getRoleByName(name: string): Promise<Role | null> {
-  if (!name) {
+export async function getRoleByNameAndOrganization(name: string, organizationId: string): Promise<Role | null> {
+  if (!name || !organizationId) {
     return null;
   }
   
   return prisma.role.findFirst({
-    where: { name } as RoleWhereInput,
+    where: { 
+      name,
+      organizationId,
+    },
   });
 }
 
 /**
- * Gets all roles
+ * Gets all roles for an organization
  */
-export async function getAllRoles(): Promise<Role[]> {
-  return prisma.role.findMany();
+export async function getRolesByOrganization(organizationId: string): Promise<Role[]> {
+  if (!organizationId) {
+    return [];
+  }
+  
+  return prisma.role.findMany({
+    where: { organizationId },
+  });
 }
 
 /**
- * Gets the admin role
+ * Gets the admin role for an organization
  */
-export async function getAdminRole(): Promise<Role | null> {
-  return getRoleByName('Admin');
+export async function getAdminRoleForOrganization(organizationId: string): Promise<Role | null> {
+  return getRoleByNameAndOrganization('Admin', organizationId);
 }
 
 /**
- * Gets the member role
+ * Gets the member role for an organization
  */
-export async function getMemberRole(): Promise<Role | null> {
-  return getRoleByName('Member');
+export async function getMemberRoleForOrganization(organizationId: string): Promise<Role | null> {
+  return getRoleByNameAndOrganization('Member', organizationId);
 }
 
 /**
- * Gets or creates the admin role
+ * Gets or creates the admin role for an organization
  */
-export async function getOrCreateAdminRole(): Promise<Role> {
-  const adminRole = await getAdminRole();
+export async function getOrCreateAdminRoleForOrganization(organizationId: string): Promise<Role> {
+  const adminRole = await getAdminRoleForOrganization(organizationId);
   
   if (adminRole) {
     return adminRole;
@@ -82,16 +90,18 @@ export async function getOrCreateAdminRole(): Promise<Role> {
     data: {
       name: 'Admin',
       permissions: ADMIN_PERMISSIONS,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
+      organization: {
+        connect: { id: organizationId }
+      }
+    },
   });
 }
 
 /**
- * Gets or creates the member role
+ * Gets or creates the member role for an organization
  */
-export async function getOrCreateMemberRole(): Promise<Role> {
-  const memberRole = await getMemberRole();
+export async function getOrCreateMemberRoleForOrganization(organizationId: string): Promise<Role> {
+  const memberRole = await getMemberRoleForOrganization(organizationId);
   
   if (memberRole) {
     return memberRole;
@@ -101,25 +111,33 @@ export async function getOrCreateMemberRole(): Promise<Role> {
     data: {
       name: 'Member',
       permissions: MEMBER_PERMISSIONS,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
+      organization: {
+        connect: { id: organizationId }
+      }
+    },
   });
 }
 
 /**
- * Creates a new role
+ * Creates a new role for an organization
  */
-export async function createRole(name: string, permissions: string[]): Promise<Role> {
-  if (!name) {
-    throw new Error('Role name is required');
+export async function createRoleForOrganization(
+  name: string, 
+  permissions: string[], 
+  organizationId: string
+): Promise<Role> {
+  if (!name || !organizationId) {
+    throw new Error('Role name and organization ID are required');
   }
   
   return prisma.role.create({
     data: {
       name,
       permissions,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
+      organization: {
+        connect: { id: organizationId }
+      }
+    },
   });
 }
 
@@ -128,7 +146,7 @@ export async function createRole(name: string, permissions: string[]): Promise<R
  */
 export async function updateRole(
   id: string,
-  data: Partial<Omit<Role, 'id' | 'createdAt' | 'updatedAt'>>
+  data: Partial<Omit<Role, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>>
 ): Promise<Role> {
   if (!id) {
     throw new Error('Role ID is required');

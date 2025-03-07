@@ -1,5 +1,6 @@
 import { PrismaClient, Organization, UserOrganization } from '@prisma/client';
 import { extractDomain, suggestOrganizationName } from '@/utils/domainUtils';
+import { getOrCreateAdminRoleForOrganization, getOrCreateMemberRoleForOrganization } from './roleService';
 
 const prisma = new PrismaClient();
 
@@ -40,12 +41,18 @@ export async function createOrganization(
     throw new Error('Organization name is required');
   }
   
-  return prisma.organization.create({
+  const organization = await prisma.organization.create({
     data: {
       name,
       domain,
     },
   });
+  
+  // Create default roles for the organization
+  await getOrCreateAdminRoleForOrganization(organization.id);
+  await getOrCreateMemberRoleForOrganization(organization.id);
+  
+  return organization;
 }
 
 /**

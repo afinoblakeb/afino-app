@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { createOrganization } from '@/services/organizationService';
-import { getOrCreateAdminRole } from '@/services/roleService';
+import { getOrCreateAdminRoleForOrganization } from '@/services/roleService';
 import { addUserToOrganization } from '@/services/organizationService';
 import { extractDomain } from '@/utils/domainUtils';
 
@@ -33,8 +33,8 @@ export async function POST(request: Request) {
     // Create the organization
     const organization = await createOrganization(name, orgDomain);
     
-    // Get admin role
-    const adminRole = await getOrCreateAdminRole();
+    // Get admin role for this organization
+    const adminRole = await getOrCreateAdminRoleForOrganization(organization.id);
     
     // Add user to organization as admin
     await addUserToOrganization(user.id, organization.id, adminRole.id);
