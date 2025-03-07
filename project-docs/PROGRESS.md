@@ -50,11 +50,11 @@ This document tracks the progress of the Afino platform development.
 7. ✅ Generate and apply the initial Prisma migration
 8. ✅ Implement UI scaffolding (layout with sidebar)
 9. ✅ Set up GitHub repository and Vercel deployment
-10. Implement authentication pages (sign-up, sign-in)
+10. ✅ Implement authentication pages (sign-up, sign-in)
    - [x] Create feature plan for authentication
-   - [ ] Implement sign-up page
-   - [ ] Implement sign-in page
-   - [ ] Implement password reset flow
+   - [x] Implement sign-up page
+   - [x] Implement sign-in page
+   - [x] Implement password reset flow
 11. Implement organization creation flow
     - [x] Create feature plan for organization creation
     - [ ] Implement organization creation page
@@ -76,19 +76,19 @@ This document tracks the progress of the Afino platform development.
 
 ### Authentication
 
-- [ ] Sign-up page
-  - [ ] Form with validation
-  - [ ] Email verification
-  - [ ] Success/error handling
-- [ ] Sign-in page
-  - [ ] Form with validation
-  - [ ] Remember me functionality
-  - [ ] Forgot password link
-  - [ ] Success/error handling
-- [ ] Password reset flow
-  - [ ] Request password reset page
-  - [ ] Reset password page
-  - [ ] Success/error handling
+- [x] Sign-up page
+  - [x] Form with validation
+  - [x] Email verification
+  - [x] Success/error handling
+- [x] Sign-in page
+  - [x] Form with validation
+  - [x] Remember me functionality
+  - [x] Forgot password link
+  - [x] Success/error handling
+- [x] Password reset flow
+  - [x] Request password reset page
+  - [x] Reset password page
+  - [x] Success/error handling
 
 ### Organization Management
 
@@ -184,8 +184,8 @@ This document tracks the progress of the Afino platform development.
 
 ## Testing
 
-- [ ] Unit tests
-  - [ ] Authentication components
+- [x] Unit tests
+  - [x] Authentication components
   - [ ] Organization components
   - [ ] User components
   - [ ] UI components
