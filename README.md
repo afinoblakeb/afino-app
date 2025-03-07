@@ -1,5 +1,7 @@
 # Afino Platform
 
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://afino-app.vercel.app)
+
 A modern fintech platform built with Next.js, Supabase, and Prisma.
 
 ## Project Structure
