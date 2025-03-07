@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { getUserOrganizations } from '@/services/organizationService';
 
+// Define a type for the user organization with its relations
+interface UserOrgWithRelations {
+  organization: {
+    id: string;
+    name: string;
+    domain: string | null;
+  };
+  role: {
+    id: string;
+    name: string;
+    permissions: string[];
+  };
+  createdAt: Date;
+}
+
 export async function GET() {
   try {
     // Get the current user
@@ -19,7 +34,7 @@ export async function GET() {
     const userOrganizations = await getUserOrganizations(user.id);
     
     // Transform the data for the frontend
-    const organizations = userOrganizations.map((userOrg) => ({
+    const organizations = userOrganizations.map((userOrg: UserOrgWithRelations) => ({
       id: userOrg.organization.id,
       name: userOrg.organization.name,
       domain: userOrg.organization.domain,
