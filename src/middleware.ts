@@ -3,6 +3,11 @@ import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
+  // Skip middleware for callback route
+  if (request.nextUrl.pathname === '/auth/callback') {
+    return NextResponse.next();
+  }
+
   // Create a Supabase client configured to use cookies
   const res = NextResponse.next();
   
@@ -38,12 +43,6 @@ export async function middleware(request: NextRequest) {
   // Check if the request is for a protected route
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard');
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
-  const isCallbackRoute = request.nextUrl.pathname === '/auth/callback';
-
-  // Allow callback route to proceed without redirection
-  if (isCallbackRoute) {
-    return res;
-  }
 
   // If accessing a protected route without a session, redirect to sign in
   if (isProtectedRoute && !session) {
@@ -53,7 +52,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // If accessing auth routes with a session, redirect to dashboard
-  if (isAuthRoute && session && !isCallbackRoute) {
+  if (isAuthRoute && session) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

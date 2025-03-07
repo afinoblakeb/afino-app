@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,8 @@ const signInSchema = z.object({
 
 type SignInFormValues = z.infer<typeof signInSchema>;
 
-export default function SignInForm() {
+// Separate component that uses useSearchParams
+function SignInFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -60,23 +61,15 @@ export default function SignInForm() {
     setFormError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Use a simpler approach with fewer options
+      await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
         },
       });
-
-      if (error) {
-        setFormError(error.message);
-        setIsGoogleLoading(false);
-      }
       
-      // No need to set loading to false on success as we're redirecting
+      // The page will be redirected by Supabase, so we don't need to handle it here
     } catch (error) {
       setFormError('An unexpected error occurred. Please try again.');
       console.error('Google sign in error:', error);
@@ -269,5 +262,24 @@ export default function SignInForm() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense
+export default function SignInForm() {
+  return (
+    <Suspense fallback={
+      <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-lg shadow-md">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Sign In</h1>
+          <p className="text-gray-600 mt-2">Loading...</p>
+        </div>
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    }>
+      <SignInFormContent />
+    </Suspense>
   );
 } 
