@@ -1,6 +1,10 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { createUserProfile } from '@/services/userService'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
@@ -44,6 +48,24 @@ export async function GET(request: Request) {
     try {
       // Must await the exchange code for session
       await supabase.auth.exchangeCodeForSession(code)
+      
+      // Get the user from Supabase
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Check if user exists in our database
+        const existingUser = await prisma.user.findUnique({
+          where: { id: user.id },
+        })
+        
+        if (!existingUser) {
+          // New user - create profile
+          await createUserProfile(user)
+          
+          // Redirect to onboarding flow
+          return NextResponse.redirect(`${requestUrl.origin}/onboarding`)
+        }
+      }
     } catch {
       // If there's an error, redirect to the sign-in page
       return NextResponse.redirect(`${requestUrl.origin}/auth/signin?error=Could not authenticate user`)

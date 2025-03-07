@@ -14,20 +14,47 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  fullName     String         @map("full_name")
-  avatarUrl    String?        @map("avatar_url")
-  phoneNumber  String?        @map("phone_number")
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
-  
-  // Relations
-  profile      UserProfile?
-  members      Member[]
-  invitations  Invitation[]   @relation("InvitedBy")
+  id            String            @id
+  email         String            @unique
+  name          String?
+  firstName     String?
+  lastName      String?
+  avatarUrl     String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  organizations UserOrganization[]
+}
 
-  @@map("users")
+model Organization {
+  id          String            @id @default(uuid())
+  name        String
+  domain      String?           @unique
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  users       UserOrganization[]
+}
+
+model UserOrganization {
+  id             String       @id @default(uuid())
+  userId         String
+  organizationId String
+  roleId         String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  role           Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model Role {
+  id               String             @id @default(uuid())
+  name             String             @unique
+  permissions      String[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  userOrganizations UserOrganization[]
 }
 
 model UserProfile {
@@ -43,39 +70,6 @@ model UserProfile {
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
-}
-
-model Organization {
-  id           String         @id @default(uuid())
-  name         String
-  slug         String         @unique
-  logoUrl      String?        @map("logo_url")
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
-  
-  // Relations
-  members      Member[]
-  roles        Role[]
-  invitations  Invitation[]
-
-  @@map("organizations")
-}
-
-model Role {
-  id             String         @id @default(uuid())
-  name           String
-  organizationId String         @map("organization_id")
-  permissions    Json           @default("{}")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-  
-  // Relations
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  members        Member[]
-  invitations    Invitation[]
-
-  @@unique([organizationId, name])
-  @@map("roles")
 }
 
 model Member {
