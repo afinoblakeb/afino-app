@@ -19,10 +19,10 @@ This document tracks the progress of the Afino platform development.
   - [x] Install ESLint and Prettier
   - [x] Configure rules for TypeScript and React
   - [x] Add lint scripts to package.json
-- [ ] Set up Jest and React Testing Library
-  - [ ] Install Jest and React Testing Library
-  - [ ] Configure Jest for Next.js
-  - [ ] Create test setup files
+- [x] Set up Jest and React Testing Library
+  - [x] Install Jest and React Testing Library
+  - [x] Configure Jest for Next.js
+  - [x] Create test setup files
 - [x] Set up Prisma ORM
   - [x] Install Prisma CLI and client
   - [x] Create initial schema.prisma file
