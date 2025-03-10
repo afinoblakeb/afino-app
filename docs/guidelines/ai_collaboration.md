@@ -29,12 +29,14 @@ Good: "Create a login form component for our admin dashboard that validates emai
 
 Always reference relevant project context files when asking for assistance:
 
-- "Following our component guidelines in `cursorrules/guidelines/component_guidelines.md`..."
-- "According to our database schema in `cursorrules/architecture/database_schema.md`..."
-- "Using the API design pattern from `cursorrules/architecture/api_design.md`..."
-- "Following our development requirements in `cursorrules/guidelines/development_requirements.md`..."
+- "Following our component guidelines in `.cursor/rules/component_structure_rules.mdc`..."
+- "According to our database schema in `docs/architecture/database_schema.md`..."
+- "Using the API design pattern from `.cursor/rules/api_design_rules.mdc`..."
+- "Following our development requirements in `.cursor/rules/documentation_rules.mdc`..."
 - "According to our progress file in `PROGRESS.md`..."
 - "Based on our Prisma schema in `prisma/schema.prisma`..."
+- "Following our documentation rules in `.cursor/rules/documentation_rules.mdc`..."
+- "Using our TypeScript conventions in `.cursor/rules/typescript_rules.mdc`..."
 
 ### Iterative Development
 
@@ -188,6 +190,17 @@ When working with the database:
 - Request input validation and sanitization for all user inputs
 - Emphasize secure API design and data handling
 
+### Documentation-First Development
+
+- Always request documentation updates as part of the same commit as code changes
+- Follow the documentation rules in `.cursor/rules/documentation_rules.mdc`
+- Ensure feature plans are updated to reflect the actual implementation
+- Document design decisions, trade-offs, and implementation details
+- Update API documentation when endpoints are modified
+- Keep the PROGRESS.md file up-to-date with completed features
+- Use proper Markdown formatting and consistent terminology
+- Include diagrams or visual aids for complex concepts when appropriate
+
 ## Implementation Workflow with AI
 
 When implementing a feature with AI assistance, follow this workflow:
@@ -197,8 +210,8 @@ When implementing a feature with AI assistance, follow this workflow:
 3. **Test Creation**: Request tests for the feature before implementation
 4. **Implementation**: Ask for implementation code using Shadcn components
 5. **Build Verification**: Request build verification after implementation
-6. **Progress Update**: Ask the AI to update the PROGRESS.md file
-7. **Documentation Update**: Request updates to relevant documentation
+6. **Documentation Update**: Request updates to relevant documentation files in the same commit as the implementation
+7. **Progress Update**: Ask the AI to update the PROGRESS.md file
 
 Example prompt:
 ```
@@ -208,9 +221,11 @@ I'd like to implement the user authentication feature. Please:
 3. Write unit and integration tests for the authentication components
 4. Implement the components using Shadcn's Form components
 5. Verify it builds successfully with npm run build
-6. Update the PROGRESS.md file to mark the authentication tasks as completed
-7. Update any relevant documentation
+6. Update all relevant documentation files to reflect the implementation details
+7. Update the PROGRESS.md file to mark the authentication tasks as completed
 ```
+
+Remember that documentation updates should be part of the same commit as the feature implementation, following our documentation rules in `.cursor/rules/documentation_rules.mdc`.
 
 ## Continuous Improvement
 
