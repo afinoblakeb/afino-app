@@ -1,1 +1,76 @@
- 
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Documentation Rules
+
+## Continuous Documentation Updates
+
+- ALWAYS update documentation files in `/docs` immediately after implementing or modifying features.
+- NEVER leave documentation updates for later - they should be part of the same commit as the feature implementation.
+- ALWAYS update feature plans in `/docs/feature-plans` to reflect the current implementation status.
+- ALWAYS mark completed items in `PROGRESS.md` when features are implemented.
+- ALWAYS document design decisions, trade-offs, and implementation details.
+
+## Documentation Structure
+
+- ALWAYS place documentation in the appropriate subdirectory based on its content:
+  - `/docs/feature-plans/` for feature planning documents
+  - `/docs/architecture/` for architecture documentation
+  - `/docs/technical/` for technical documentation
+  - `/docs/guidelines/` for development guidelines
+- ALWAYS use Markdown format for all documentation files.
+- ALWAYS include a clear title and description at the top of each document.
+- ALWAYS use relative links when referencing other documentation files.
+
+## Feature Plan Documentation
+
+- ALWAYS create a feature plan document before implementing a new feature.
+- ALWAYS include the following sections in feature plans:
+  - Problem statement
+  - Proposed solution
+  - Implementation details
+  - API design (if applicable)
+  - Database schema changes (if applicable)
+  - UI/UX design (if applicable)
+  - Testing strategy
+  - Timeline and milestones
+- ALWAYS update the feature plan document with the actual implementation details after completion.
+- ALWAYS note any deviations from the original plan and the reasons for them.
+
+## API Documentation
+
+- ALWAYS document all API endpoints with:
+  - Endpoint URL and HTTP method
+  - Request parameters and body schema
+  - Response schema and status codes
+  - Authentication requirements
+  - Rate limiting information (if applicable)
+  - Example requests and responses
+- ALWAYS update API documentation when endpoints are modified.
+- NEVER leave API endpoints undocumented.
+
+## Code Documentation
+
+- ALWAYS add JSDoc comments to functions, classes, and interfaces.
+- ALWAYS document complex logic with inline comments.
+- ALWAYS include examples for non-obvious usage patterns.
+- ALWAYS document known limitations and edge cases.
+
+## Documentation Quality
+
+- ALWAYS write clear, concise, and grammatically correct documentation.
+- ALWAYS use consistent terminology throughout the documentation.
+- ALWAYS organize documentation with appropriate headings and sections.
+- ALWAYS include diagrams or visual aids for complex concepts.
+- NEVER use ambiguous language or undefined terms.
+- ALWAYS review documentation for accuracy and completeness.
+
+## Documentation Maintenance
+
+- ALWAYS review and update affected documentation when making code changes.
+- ALWAYS remove or update outdated documentation.
+- ALWAYS keep the README.md file up-to-date with setup instructions and dependencies.
+- ALWAYS update architecture documentation when making significant changes.
+- ALWAYS ensure documentation reflects the current state of the codebase. 

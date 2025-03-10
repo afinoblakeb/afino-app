@@ -30,11 +30,11 @@ export async function GET() {
       );
     }
     
-    // Get user's organizations
-    const userOrganizations = await getUserOrganizations(user.id);
+    // Get user organizations
+    const organizations = await getUserOrganizations(user.id);
     
     // Transform the data for the frontend
-    const organizations = userOrganizations.map((userOrg: UserOrgWithRelations) => ({
+    const transformedOrganizations = organizations.map((userOrg: UserOrgWithRelations) => ({
       id: userOrg.organization.id,
       name: userOrg.organization.name,
       domain: userOrg.organization.domain,
@@ -46,11 +46,11 @@ export async function GET() {
       joinedAt: userOrg.createdAt,
     }));
     
-    return NextResponse.json({ organizations });
+    return NextResponse.json({ organizations: transformedOrganizations });
   } catch (error) {
-    console.error('Error fetching user organizations:', error);
+    console.error('Error getting user organizations:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch organizations' },
+      { error: 'Failed to get user organizations' },
       { status: 500 }
     );
   }

@@ -1,1 +1,212 @@
- 
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# API Design Rules
+
+## API Route Structure
+
+- ALWAYS organize API routes by resource in the `src/app/api` directory.
+- ALWAYS follow RESTful conventions for endpoint naming.
+- ALWAYS use HTTP methods appropriately:
+  - GET for retrieving data
+  - POST for creating data
+  - PUT for updating data
+  - DELETE for removing data
+- NEVER use GET requests for operations that modify data.
+
+## Example Directory Structure
+
+```
+src/app/api/
+├── organizations/
+│   ├── route.ts                 # GET, POST /api/organizations
+│   ├── [id]/
+│   │   ├── route.ts             # GET, PUT, DELETE /api/organizations/:id
+│   │   ├── members/
+│   │   │   ├── route.ts         # GET, POST /api/organizations/:id/members
+│   │   │   └── [memberId]/
+│   │   │       └── route.ts     # GET, PUT, DELETE /api/organizations/:id/members/:memberId
+│   │   └── invitations/
+│   │       └── route.ts         # GET, POST /api/organizations/:id/invitations
+├── users/
+│   ├── route.ts                 # GET, POST /api/users
+│   └── [id]/
+│       └── route.ts             # GET, PUT, DELETE /api/users/:id
+└── auth/
+    ├── login/
+    │   └── route.ts             # POST /api/auth/login
+    └── register/
+        └── route.ts             # POST /api/auth/register
+```
+
+## Input Validation
+
+- ALWAYS validate all inputs using Zod.
+- ALWAYS define validation schemas at the top of the file or in a separate file for reuse.
+- ALWAYS return detailed validation errors.
+- NEVER trust client-side data without validation.
+
+```typescript
+// CORRECT
+import { z } from 'zod';
+import { NextResponse } from 'next/server';
+
+const createUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2).max(100),
+  role: z.enum(['admin', 'user']),
+  organizationId: z.string().uuid().optional(),
+});
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const validatedData = createUserSchema.parse(body);
+    
+    // Process validated data...
+    
+    return NextResponse.json({ success: true, data: newUser }, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+    }
+    
+    console.error('User creation error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+## Error Handling
+
+- ALWAYS use appropriate HTTP status codes:
+  - 200: OK
+  - 201: Created
+  - 400: Bad Request
+  - 401: Unauthorized
+  - 403: Forbidden
+  - 404: Not Found
+  - 500: Internal Server Error
+- ALWAYS return consistent error response format.
+- ALWAYS log server errors but NEVER expose sensitive error details to clients.
+- NEVER return stack traces to the client.
+
+```typescript
+// CORRECT error response format
+{
+  "error": "Validation error",
+  "details": [
+    {
+      "path": ["email"],
+      "message": "Invalid email address"
+    }
+  ]
+}
+```
+
+## Authentication and Authorization
+
+- ALWAYS authenticate requests to protected endpoints.
+- ALWAYS check permissions before performing operations.
+- NEVER expose sensitive endpoints without authentication.
+- ALWAYS use middleware for common auth checks.
+
+```typescript
+// CORRECT
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  // Authentication
+  const session = await getServerSession();
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Authorization
+  const organization = await prisma.organization.findUnique({
+    where: { id: params.id },
+    include: { members: { where: { userId: session.user.id } } },
+  });
+
+  if (!organization || organization.members.length === 0) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  // Process request...
+  return NextResponse.json(organization);
+}
+```
+
+## Response Format
+
+- ALWAYS use consistent response formats.
+- ALWAYS include status indicators in the response.
+- ALWAYS use camelCase for JSON property names.
+- NEVER include sensitive data in responses.
+
+```typescript
+// CORRECT success response format
+{
+  "data": {
+    "id": "123",
+    "name": "Example Organization",
+    "createdAt": "2023-01-01T00:00:00Z"
+  }
+}
+
+// CORRECT error response format
+{
+  "error": "Resource not found",
+  "message": "The requested organization does not exist"
+}
+```
+
+## Performance
+
+- ALWAYS limit the amount of data returned.
+- ALWAYS implement pagination for list endpoints.
+- ALWAYS use query optimization techniques.
+- NEVER perform expensive operations synchronously.
+
+```typitten
+// CORRECT pagination implementation
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const skip = (page - 1) * limit;
+  
+  const [total, items] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+  
+  return NextResponse.json({
+    data: items,
+    meta: {
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    },
+  });
+}
+```
+
+## Documentation
+
+- ALWAYS document API endpoints with JSDoc comments.
+- ALWAYS include information about parameters, request body, and responses.
+- ALWAYS document error responses.
+- ALWAYS keep documentation up-to-date with implementation. 

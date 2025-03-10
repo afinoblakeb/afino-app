@@ -1,1 +1,155 @@
- 
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Component Structure Rules
+
+## File Organization
+
+- ALWAYS organize component files in a feature-based structure.
+- ALWAYS place shared UI components in `src/components/ui/`.
+- ALWAYS place feature-specific components in their respective feature directories.
+- ALWAYS name component files using PascalCase (e.g., `UserProfile.tsx`).
+- ALWAYS create one component per file.
+
+## Component Structure
+
+- ALWAYS structure components in the following order:
+  1. Imports
+  2. Types/Interfaces
+  3. Constants
+  4. Component function
+  5. Helper functions
+  6. Export statement
+- NEVER define types or interfaces outside of the component file unless they are shared.
+- ALWAYS use named exports for shared components and default exports for page components.
+
+## Example
+
+```tsx
+// UserProfile.tsx
+import { useState, useEffect } from 'react';
+import { Avatar } from '@/components/ui/avatar';
+import { Card } from '@/components/ui/card';
+import { api } from '@/lib/api';
+
+// Types
+interface UserProfileProps {
+  userId: string;
+  showDetails?: boolean;
+}
+
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl?: string;
+}
+
+// Constants
+const ROLES = {
+  ADMIN: 'admin',
+  USER: 'user',
+};
+
+// Component
+const UserProfile = ({ userId, showDetails = true }: UserProfileProps) => {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [userId]);
+
+  // Helper function
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const data = await api.users.getById(userId);
+      setUserData(data);
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>;
+  }
+
+  if (!userData) {
+    return <div className="p-4">User not found</div>;
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center gap-4">
+        <Avatar src={userData.avatarUrl} fallback={userData.name[0]} />
+        <div>
+          <h2 className="text-xl font-semibold">{userData.name}</h2>
+          <p className="text-gray-600">{userData.email}</p>
+          {showDetails && (
+            <p className="text-sm text-gray-500">Role: {userData.role}</p>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export default UserProfile;
+```
+
+## Props
+
+- ALWAYS define prop types using TypeScript interfaces.
+- ALWAYS provide default values for optional props.
+- ALWAYS destructure props in the function parameter.
+- NEVER use the `React.FC` type unless you need to use generic types.
+- ALWAYS document complex props with JSDoc comments.
+
+## State Management
+
+- ALWAYS keep state as local as possible.
+- ALWAYS use the appropriate hook for the state type:
+  - `useState` for simple state
+  - `useReducer` for complex state
+  - `useContext` for shared state
+  - Zustand for global state
+- NEVER mutate state directly.
+- ALWAYS use functional updates for state that depends on previous state.
+
+```tsx
+// CORRECT
+const [count, setCount] = useState(0);
+const increment = () => setCount(prevCount => prevCount + 1);
+
+// INCORRECT
+const [count, setCount] = useState(0);
+const increment = () => setCount(count + 1);
+```
+
+## Side Effects
+
+- ALWAYS use `useEffect` for side effects.
+- ALWAYS include all dependencies in the dependency array.
+- ALWAYS clean up side effects when the component unmounts.
+- NEVER call hooks inside conditionals or loops.
+
+## Performance Optimization
+
+- ALWAYS memoize expensive calculations with `useMemo`.
+- ALWAYS memoize callback functions with `useCallback` when they're passed to child components.
+- ALWAYS use `React.memo` for pure components that render often with the same props.
+- NEVER prematurely optimize components.
+
+## Accessibility
+
+- ALWAYS use semantic HTML elements.
+- ALWAYS add appropriate ARIA attributes when necessary.
+- ALWAYS ensure keyboard navigability.
+- ALWAYS provide alt text for images.
+- ALWAYS use proper heading hierarchy. 

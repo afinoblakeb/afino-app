@@ -1,1 +1,101 @@
- 
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Afino App Cursor Rules
+
+This directory contains specific rules for the Cursor Agent to follow when working with the Afino App codebase. These rules are designed to ensure consistent, high-quality code that follows the project's established patterns and best practices.
+
+## Available Rules
+
+1. **TypeScript Rules** - Rules for TypeScript code quality and patterns
+   - Type safety
+   - Naming conventions
+   - Error handling
+   - Async/await usage
+   - Import organization
+
+2. **React and Next.js Rules** - Rules for React components and Next.js features
+   - Component structure
+   - State management
+   - Hooks usage
+   - Next.js App Router
+   - API routes
+
+3. **Tailwind CSS Rules** - Rules for styling with Tailwind CSS
+   - Class organization
+   - Responsive design
+   - Theme customization
+   - Component extraction
+   - Accessibility
+
+4. **Component Structure Rules** - Rules for organizing and structuring components
+   - File organization
+   - Component structure
+   - Props handling
+   - State management
+   - Side effects
+   - Performance optimization
+
+5. **API Design Rules** - Rules for designing and implementing API routes
+   - API route structure
+   - Input validation
+   - Error handling
+   - Authentication and authorization
+   - Response format
+   - Performance considerations
+
+6. **Testing Rules** - Rules for writing effective tests
+   - Test file organization
+   - Test structure
+   - Component testing
+   - API testing
+   - Mocking
+   - Test coverage
+   - Integration testing
+
+7. **AI Collaboration Rules** - Rules for AI-assisted development
+   - Code generation
+   - Component generation
+   - API route generation
+   - Test generation
+   - Code refactoring
+   - Documentation generation
+   - Debugging assistance
+   - Continuous documentation updates
+
+8. **Documentation Rules** - Rules for maintaining project documentation
+   - Continuous documentation updates
+   - Documentation structure
+   - Feature plan documentation
+   - API documentation
+   - Code documentation
+   - Documentation quality
+   - Documentation maintenance
+
+## How to Use These Rules
+
+The Cursor Agent will automatically follow these rules when generating or modifying code. You can reference specific rules when providing instructions to the agent, for example:
+
+```
+Please create a new user profile component following the Component Structure Rules.
+```
+
+## Project-Specific Standards
+
+- Next.js 15.2.1 with App Router
+- TypeScript for type safety
+- Tailwind CSS for styling
+- Prisma for database access
+- Zod for validation
+- React Testing Library for component tests
+
+## Maintaining These Rules
+
+As the project evolves, these rules should be updated to reflect changes in the codebase, dependencies, or best practices. When updating rules:
+
+1. Be specific and clear
+2. Use ALWAYS/NEVER statements for clarity
+3. Include examples of correct and incorrect usage
+4. Ensure rules are consistent with each other 

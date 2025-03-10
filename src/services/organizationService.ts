@@ -185,4 +185,21 @@ export async function createOrganizationFromEmail(
   organization = await createOrganization(orgName, domain, slug);
   
   return { organization, created: true };
+}
+
+/**
+ * Updates an organization
+ */
+export async function updateOrganization(
+  id: string,
+  data: Partial<Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<Organization> {
+  if (!id) {
+    throw new Error('Organization ID is required');
+  }
+  
+  return prisma.organization.update({
+    where: { id },
+    data,
+  });
 } 

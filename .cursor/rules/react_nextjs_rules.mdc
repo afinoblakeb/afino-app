@@ -1,1 +1,140 @@
- 
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# React and Next.js Rules
+
+## Component Structure
+
+- ALWAYS use functional components with hooks instead of class components.
+- ALWAYS create one component per file, named the same as the file.
+- ALWAYS type component props using TypeScript interfaces.
+- ALWAYS use default exports for components.
+- NEVER use inline styles; use Tailwind CSS classes instead.
+
+## Example
+
+```typescript
+// UserProfile.tsx
+import { FC } from 'react';
+
+interface UserProfileProps {
+  userId: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+}
+
+const UserProfile: FC<UserProfileProps> = ({ userId, name, email, role }) => {
+  return (
+    <div className="p-4 bg-white rounded-lg shadow">
+      <h2 className="text-xl font-semibold">{name}</h2>
+      <p className="text-gray-600">{email}</p>
+      <p className="text-sm text-gray-500">Role: {role}</p>
+    </div>
+  );
+};
+
+export default UserProfile;
+```
+
+## State Management
+
+- ALWAYS use React hooks (`useState`, `useReducer`, `useContext`) for component state.
+- ALWAYS use Zustand for global state management.
+- NEVER use Redux unless specifically required.
+- NEVER use context for state that only needs to be passed down one or two levels.
+
+## Hooks
+
+- ALWAYS follow the Rules of Hooks (only call hooks at the top level, only call hooks from React functions).
+- ALWAYS prefix custom hooks with "use".
+- ALWAYS extract complex logic into custom hooks.
+- ALWAYS memoize expensive calculations with `useMemo`.
+- ALWAYS memoize callback functions with `useCallback` when they're passed to child components.
+
+```typescript
+// CORRECT
+const useUserData = (userId: string) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        setLoading(true);
+        const data = await api.users.getById(userId);
+        setUser(data);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Unknown error'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [userId]);
+
+  return { user, loading, error };
+};
+```
+
+## Next.js Specific Rules
+
+- ALWAYS use the App Router for new components and pages.
+- ALWAYS use Server Components for data fetching when possible.
+- ALWAYS use Client Components only when interactivity is needed.
+- ALWAYS use Next.js 15.2.1 features like Server Actions for form submissions.
+- ALWAYS use the Next.js Image component for images.
+- ALWAYS use the Next.js Link component for internal navigation.
+- NEVER use client-side redirects when server-side redirects are possible.
+
+## API Routes
+
+- ALWAYS organize API routes by resource.
+- ALWAYS validate all inputs using Zod.
+- ALWAYS return consistent error response formats.
+- ALWAYS use appropriate HTTP status codes.
+- NEVER expose sensitive information in API responses.
+
+```typescript
+// CORRECT
+import { z } from 'zod';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+const transactionSchema = z.object({
+  amount: z.number().positive(),
+  currency: z.string().length(3),
+  description: z.string().optional(),
+});
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const validatedData = transactionSchema.parse(body);
+    
+    const transaction = await prisma.transaction.create({
+      data: validatedData,
+    });
+    
+    return NextResponse.json(transaction, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+    }
+    
+    console.error('Transaction creation error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+## Data Fetching
+
+- ALWAYS use SWR or React Query for client-side data fetching.
+- ALWAYS implement proper loading and error states.
+- ALWAYS use error boundaries for handling data fetching errors.
+- NEVER fetch data in a component that doesn't need it directly. 

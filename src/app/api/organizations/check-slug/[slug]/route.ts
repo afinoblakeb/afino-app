@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { findOrganizationByDomain } from '@/services/organizationService';
+import { getOrganizationBySlug } from '@/services/organizationService';
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ domain: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { domain } = await params;
+    const { slug } = await params;
     
-    if (!domain) {
+    if (!slug) {
       return NextResponse.json(
-        { error: 'Domain is required' },
+        { error: 'Slug is required' },
         { status: 400 }
       );
     }
@@ -27,14 +27,14 @@ export async function GET(
       );
     }
     
-    // Find organization by domain
-    const organization = await findOrganizationByDomain(domain);
+    // Check if organization with this slug exists
+    const organization = await getOrganizationBySlug(slug);
     
-    return NextResponse.json({ organization });
+    return NextResponse.json({ exists: !!organization });
   } catch (error) {
-    console.error('Error finding organization by domain:', error);
+    console.error('Error checking slug availability:', error);
     return NextResponse.json(
-      { error: 'Failed to find organization' },
+      { error: 'Failed to check slug availability' },
       { status: 500 }
     );
   }

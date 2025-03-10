@@ -1,1 +1,244 @@
- 
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# AI Collaboration Rules
+
+## Code Generation
+
+- ALWAYS follow the project's coding standards when generating code.
+- ALWAYS generate TypeScript code with proper type definitions.
+- ALWAYS use the established project patterns and conventions.
+- NEVER generate code that uses deprecated APIs or patterns.
+- ALWAYS include error handling in generated code.
+- ALWAYS add appropriate comments to complex logic.
+
+## Component Generation
+
+- ALWAYS create components that follow the project's component structure.
+- ALWAYS use Tailwind CSS for styling.
+- ALWAYS include proper TypeScript interfaces for props.
+- ALWAYS implement proper loading and error states.
+- ALWAYS ensure components are accessible.
+- NEVER use inline styles.
+
+```tsx
+// CORRECT component generation
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+
+interface UserCardProps {
+  userId: string;
+  name: string;
+  email: string;
+  onEdit?: (userId: string) => void;
+}
+
+const UserCard = ({ userId, name, email, onEdit }: UserCardProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleEdit = () => {
+    setIsLoading(true);
+    onEdit?.(userId);
+    setIsLoading(false);
+  };
+  
+  return (
+    <Card className="p-4 bg-white rounded-lg shadow">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-medium">{name}</h3>
+          <p className="text-gray-600">{email}</p>
+        </div>
+        {onEdit && (
+          <Button 
+            onClick={handleEdit} 
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+          >
+            {isLoading ? 'Editing...' : 'Edit'}
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+export default UserCard;
+```
+
+## API Route Generation
+
+- ALWAYS follow the RESTful API design principles.
+- ALWAYS include proper input validation using Zod.
+- ALWAYS implement proper error handling.
+- ALWAYS use appropriate HTTP status codes.
+- ALWAYS include authentication and authorization checks.
+- NEVER expose sensitive information in responses.
+
+```typescript
+// CORRECT API route generation
+import { z } from 'zod';
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { prisma } from '@/lib/prisma';
+
+const userUpdateSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  email: z.string().email().optional(),
+  role: z.enum(['admin', 'user']).optional(),
+});
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Authentication
+    const session = await getServerSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Input validation
+    const body = await request.json();
+    const validatedData = userUpdateSchema.parse(body);
+    
+    // Authorization
+    const user = await prisma.user.findUnique({
+      where: { id: params.id },
+    });
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
+    if (user.id !== session.user.id && session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: params.id },
+      data: validatedData,
+    });
+    
+    return NextResponse.json({ data: updatedUser });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+    }
+    
+    console.error('User update error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+## Test Generation
+
+- ALWAYS generate tests that follow the project's testing patterns.
+- ALWAYS include tests for both success and error cases.
+- ALWAYS use descriptive test names.
+- ALWAYS follow the Arrange-Act-Assert pattern.
+- ALWAYS mock external dependencies.
+- NEVER test implementation details.
+
+```typescript
+// CORRECT test generation
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import UserCard from '../UserCard';
+
+describe('UserCard', () => {
+  it('renders user information correctly', () => {
+    // Arrange
+    render(
+      <UserCard 
+        userId="123" 
+        name="John Doe" 
+        email="john@example.com" 
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('john@example.com')).toBeInTheDocument();
+  });
+  
+  it('calls onEdit when edit button is clicked', async () => {
+    // Arrange
+    const handleEdit = jest.fn();
+    render(
+      <UserCard 
+        userId="123" 
+        name="John Doe" 
+        email="john@example.com" 
+        onEdit={handleEdit}
+      />
+    );
+    
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
+    
+    // Assert
+    expect(handleEdit).toHaveBeenCalledWith('123');
+  });
+  
+  it('does not render edit button when onEdit is not provided', () => {
+    // Arrange
+    render(
+      <UserCard 
+        userId="123" 
+        name="John Doe" 
+        email="john@example.com" 
+      />
+    );
+    
+    // Assert
+    expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
+  });
+});
+```
+
+## Code Refactoring
+
+- ALWAYS maintain the original functionality when refactoring.
+- ALWAYS improve code quality, readability, and maintainability.
+- ALWAYS add or improve type definitions.
+- ALWAYS extract repeated logic into reusable functions.
+- NEVER introduce new bugs or edge cases.
+- ALWAYS add or maintain tests for refactored code.
+
+## Documentation Generation
+
+- ALWAYS write clear and concise documentation.
+- ALWAYS include examples where appropriate.
+- ALWAYS document parameters, return values, and exceptions.
+- ALWAYS use proper Markdown formatting.
+- ALWAYS keep documentation up-to-date with code changes.
+- ALWAYS update relevant documentation files in `/docs` immediately after implementing or modifying features.
+- NEVER leave documentation updates for later - they should be part of the same commit as the feature implementation.
+- ALWAYS update feature plans in `/docs/feature-plans` to reflect the current implementation status.
+- ALWAYS include implementation details, design decisions, and usage examples in documentation.
+
+## Debugging Assistance
+
+- ALWAYS analyze the problem thoroughly before suggesting solutions.
+- ALWAYS consider edge cases and potential issues.
+- ALWAYS explain the reasoning behind suggested fixes.
+- NEVER suggest quick fixes without understanding the root cause.
+- ALWAYS verify that suggested fixes address the actual problem.
+
+## Project-Specific Rules
+
+- ALWAYS use Next.js 15.2.1 features and patterns.
+- ALWAYS use Tailwind CSS for styling.
+- ALWAYS use Prisma for database access.
+- ALWAYS use Zod for validation.
+- ALWAYS use React Testing Library for component tests.
+- ALWAYS follow the established project structure.
+- NEVER introduce new dependencies without justification. 
