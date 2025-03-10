@@ -10,7 +10,12 @@ Afino App Directory Structure:
 ├── README.md
 ├── components.json
 ├── docs/
+│   ├── PROGRESS.md
 │   ├── README.md
+│   ├── architecture/
+│   │   ├── api_design.md
+│   │   ├── database_schema.md
+│   │   └── overview.md
 │   ├── feature-plans/
 │   │   ├── authentication-onboarding.md
 │   │   ├── feature-plan-authentication.md
@@ -21,13 +26,23 @@ Afino App Directory Structure:
 │   │   ├── feature-plan-user-profile.md
 │   │   └── user-onboarding.md
 │   ├── feature-roadmap.md
+│   ├── guidelines/
+│   │   ├── ai_collaboration.md
+│   │   ├── coding_standards.md
+│   │   ├── component_guidelines.md
+│   │   └── development_requirements.md
 │   ├── guides/
 │   │   └── (future guides will be added here)
-│   └── technical/
-│       ├── auth-flow-documentation.md
-│       ├── implementation-plan.md
-│       ├── project-structure.md
-│       └── supabase-production-setup.md
+│   ├── technical/
+│   │   ├── auth-flow-documentation.md
+│   │   ├── ci-cd-setup.md
+│   │   ├── implementation-plan.md
+│   │   ├── project-structure.md
+│   │   └── supabase-production-setup.md
+│   └── workflows/
+│       ├── deployment_process.md
+│       ├── development_workflow.md
+│       └── testing_strategy.md
 ├── eslint.config.mjs
 ├── jest.config.js
 ├── jest.setup.js
@@ -41,23 +56,6 @@ Afino App Directory Structure:
 │   │   └── (migration files)
 │   ├── schema.prisma
 │   └── seed.ts
-├── project-docs/
-│   ├── PROGRESS.md
-│   ├── ci-cd-setup.md
-│   └── cursorrules/
-│       ├── architecture/
-│       │   ├── api_design.md
-│       │   ├── database_schema.md
-│       │   └── overview.md
-│       ├── guidelines/
-│       │   ├── ai_collaboration.md
-│       │   ├── coding_standards.md
-│       │   ├── component_guidelines.md
-│       │   └── development_requirements.md
-│       └── workflows/
-│           ├── deployment_process.md
-│           ├── development_workflow.md
-│           └── testing_strategy.md
 ├── public/
 │   ├── afino-logo.svg
 │   ├── file.svg
@@ -182,8 +180,12 @@ Afino App Directory Structure:
 ### Documentation (`docs/`)
 
 - `README.md`: Overview of the documentation structure
+- `PROGRESS.md`: Project progress tracking
 - `feature-plans/`: Detailed plans for individual features
 - `technical/`: Technical documentation and implementation details
+- `architecture/`: Architecture documentation
+- `guidelines/`: Development guidelines
+- `workflows/`: Development workflows
 - `guides/`: User and developer guides
 - `feature-roadmap.md`: Consolidated feature roadmap
 
