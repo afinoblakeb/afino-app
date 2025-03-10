@@ -15,7 +15,7 @@ const inviteUserSchema = z.object({
 // Get all invitations for an organization
 export async function GET(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     // Check authentication
@@ -64,7 +64,7 @@ export async function GET(
 // Create a new invitation
 export async function POST(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     // Check authentication

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { User } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +19,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
 
 // Form validation schema
 const personalInfoSchema = z.object({
@@ -36,7 +36,6 @@ interface PersonalInfoFormProps {
 
 export function PersonalInfoForm({ user }: PersonalInfoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
   
   // Initialize form with current user data
   const form = useForm<PersonalInfoValues>({
@@ -67,16 +66,13 @@ export function PersonalInfoForm({ user }: PersonalInfoFormProps) {
         throw new Error(error.error || 'Failed to update profile');
       }
       
-      toast({
-        title: 'Profile updated',
+      toast.success('Profile updated', {
         description: 'Your profile information has been updated.',
       });
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: error instanceof Error ? error.message : 'Failed to update profile',
-        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);

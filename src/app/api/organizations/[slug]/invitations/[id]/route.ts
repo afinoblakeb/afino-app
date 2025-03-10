@@ -10,7 +10,7 @@ import {
 // Delete (cancel) an invitation
 export async function DELETE(
   request: Request,
-  { params }: { params: { slug: string; id: string } }
+  { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
   try {
     // Check authentication
@@ -71,7 +71,7 @@ export async function DELETE(
 // Resend an invitation
 export async function PUT(
   request: Request,
-  { params }: { params: { slug: string; id: string } }
+  { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
   try {
     // Check authentication

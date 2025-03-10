@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
 
 interface InvitationPageProps {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 }
 
 interface InvitationDetails {
@@ -34,18 +34,34 @@ interface InvitationDetails {
 }
 
 export default function InvitationPage({ params }: InvitationPageProps) {
-  const { token } = params;
   const router = useRouter();
-  const { toast } = useToast();
   
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<InvitationDetails | null>(null);
   
-  // Fetch invitation details
+  // Extract the token from params
   useEffect(() => {
+    async function getToken() {
+      try {
+        const paramsData = await params;
+        setToken(paramsData.token);
+      } catch (error) {
+        console.error('Error getting token:', error);
+        setError('Invalid invitation URL');
+      }
+    }
+    
+    getToken();
+  }, [params]);
+  
+  // Fetch invitation details once we have the token
+  useEffect(() => {
+    if (!token) return;
+    
     async function fetchInvitation() {
       try {
         setLoading(true);
@@ -78,6 +94,8 @@ export default function InvitationPage({ params }: InvitationPageProps) {
   
   // Accept invitation
   const handleAcceptInvitation = async () => {
+    if (!token) return;
+    
     try {
       setAccepting(true);
       
@@ -91,8 +109,7 @@ export default function InvitationPage({ params }: InvitationPageProps) {
         throw new Error(data.error || 'Failed to accept invitation');
       }
       
-      toast({
-        title: 'Invitation accepted',
+      toast.success('Invitation accepted', {
         description: `You have joined ${invitation?.organization.name}`,
       });
       
@@ -100,10 +117,8 @@ export default function InvitationPage({ params }: InvitationPageProps) {
       router.push(`/organizations/${data.organization.slug}`);
     } catch (error) {
       console.error('Error accepting invitation:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: error instanceof Error ? error.message : 'Failed to accept invitation',
-        variant: 'destructive',
       });
       setAccepting(false);
     }
@@ -111,6 +126,8 @@ export default function InvitationPage({ params }: InvitationPageProps) {
   
   // Decline invitation
   const handleDeclineInvitation = async () => {
+    if (!token) return;
+    
     try {
       setDeclining(true);
       
@@ -124,8 +141,7 @@ export default function InvitationPage({ params }: InvitationPageProps) {
         throw new Error(data.error || 'Failed to decline invitation');
       }
       
-      toast({
-        title: 'Invitation declined',
+      toast.success('Invitation declined', {
         description: 'You have declined the invitation',
       });
       
@@ -133,15 +149,14 @@ export default function InvitationPage({ params }: InvitationPageProps) {
       router.push('/dashboard');
     } catch (error) {
       console.error('Error declining invitation:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: error instanceof Error ? error.message : 'Failed to decline invitation',
-        variant: 'destructive',
       });
       setDeclining(false);
     }
   };
   
+  // Loading state
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -153,6 +168,7 @@ export default function InvitationPage({ params }: InvitationPageProps) {
     );
   }
   
+  // Error state
   if (error) {
     return (
       <div className="max-w-md mx-auto mt-16">
@@ -176,6 +192,7 @@ export default function InvitationPage({ params }: InvitationPageProps) {
     );
   }
   
+  // Render invitation details
   return (
     <div className="max-w-md mx-auto mt-16">
       <Card>

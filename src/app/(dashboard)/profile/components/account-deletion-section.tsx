@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,13 +32,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/use-toast';
 
 // Form validation schema
 const confirmDeletionSchema = z.object({
-  confirmText: z.string().refine(value => value === 'DELETE', {
-    message: 'Please type DELETE to confirm',
-  }),
+  confirmText: z.string()
+    .refine((value) => value === '' || value === 'DELETE', {
+      message: 'Please type DELETE to confirm',
+    }),
 });
 
 type ConfirmDeletionValues = z.infer<typeof confirmDeletionSchema>;
@@ -45,7 +46,6 @@ type ConfirmDeletionValues = z.infer<typeof confirmDeletionSchema>;
 export function AccountDeletionSection() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { toast } = useToast();
   const router = useRouter();
   
   // Initialize form
@@ -54,10 +54,14 @@ export function AccountDeletionSection() {
     defaultValues: {
       confirmText: '',
     },
+    mode: 'onChange',
   });
   
+  // Only allow submission when the text is exactly "DELETE"
+  const canSubmit = form.watch('confirmText') === 'DELETE';
+  
   // Handle account deletion
-  const onSubmit = async (data: ConfirmDeletionValues) => {
+  const onSubmit = async () => {
     try {
       setIsDeleting(true);
       
@@ -70,25 +74,20 @@ export function AccountDeletionSection() {
         throw new Error(error.error || 'Failed to delete account');
       }
       
-      toast({
-        title: 'Account deleted',
+      toast.success('Account deleted', {
         description: 'Your account has been successfully deleted. Redirecting...',
       });
       
       // Redirect to sign-in page after a short delay
       setTimeout(() => {
-        router.push('/auth/signin');
+        router.push('/signin');
       }, 2000);
     } catch (error) {
       console.error('Error deleting account:', error);
       setIsDeleting(false);
       setIsDialogOpen(false);
       
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete account',
-        variant: 'destructive',
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to delete account');
     }
   };
   
@@ -146,7 +145,7 @@ export function AccountDeletionSection() {
                 <Button
                   type="submit"
                   variant="destructive"
-                  disabled={isDeleting || !form.formState.isValid}
+                  disabled={isDeleting || !canSubmit}
                 >
                   {isDeleting ? (
                     <>

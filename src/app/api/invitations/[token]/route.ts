@@ -2,14 +2,22 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/get-server-session';
 import { validateInvitationToken, updateInvitationStatus } from '@/services/invitationService';
 import { addUserToOrganization } from '@/services/organizationService';
+import { prisma } from '@/lib/prisma';
+import { Invitation, Organization, Role, User } from '@prisma/client';
+
+// Define a type for the invitation with includes
+type InvitationWithRelations = Invitation & {
+  organization: Organization;
+  role: Role;
+  invitedBy: User | null;
+};
 
 // Get invitation details using token
 export async function GET(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    // Await params before accessing its properties in Next.js 15+
     const { token } = await params;
     
     // Validate the invitation token
@@ -22,26 +30,43 @@ export async function GET(
       );
     }
     
+    // Get the full invitation with relations
+    const invitation = await prisma.invitation.findUnique({
+      where: { token },
+      include: {
+        organization: true,
+        role: true,
+        invitedBy: true,
+      },
+    }) as InvitationWithRelations | null;
+    
+    if (!invitation) {
+      return NextResponse.json(
+        { valid: false, error: 'Invitation not found' },
+        { status: 404 }
+      );
+    }
+    
     // Return the invitation details
     return NextResponse.json({
       valid: true,
       invitation: {
-        id: validation.invitation?.id,
-        email: validation.invitation?.email,
+        id: invitation.id,
+        email: invitation.email,
         organization: {
-          id: validation.invitation?.organization.id,
-          name: validation.invitation?.organization.name,
-          slug: validation.invitation?.organization.slug,
+          id: invitation.organization.id,
+          name: invitation.organization.name,
+          slug: invitation.organization.slug,
         },
         role: {
-          id: validation.invitation?.role.id,
-          name: validation.invitation?.role.name,
+          id: invitation.role.id,
+          name: invitation.role.name,
         },
-        invitedBy: validation.invitation?.invitedBy ? {
-          id: validation.invitation?.invitedBy.id,
-          name: validation.invitation?.invitedBy.name,
+        invitedBy: invitation.invitedBy ? {
+          id: invitation.invitedBy.id,
+          name: invitation.invitedBy.name,
         } : null,
-        expiresAt: validation.invitation?.expiresAt,
+        expiresAt: invitation.expiresAt,
       }
     });
   } catch (error) {
@@ -56,7 +81,7 @@ export async function GET(
 // Accept an invitation
 export async function POST(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     // Check authentication
@@ -65,20 +90,38 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Await params before accessing its properties in Next.js 15+
     const { token } = await params;
     
-    // Validate the invitation token
-    const validation = await validateInvitationToken(token);
+    // Get the full invitation with relations
+    const invitation = await prisma.invitation.findUnique({
+      where: { token },
+      include: {
+        organization: true,
+      },
+    }) as (Invitation & { organization: Organization }) | null;
     
-    if (!validation.valid || !validation.invitation) {
+    if (!invitation) {
       return NextResponse.json(
-        { valid: false, error: validation.error },
+        { error: 'Invitation not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check if the invitation is still valid
+    if (invitation.status !== 'pending') {
+      return NextResponse.json(
+        { error: `Invitation has already been ${invitation.status}` },
         { status: 400 }
       );
     }
     
-    const invitation = validation.invitation;
+    if (new Date() > invitation.expiresAt) {
+      await updateInvitationStatus(invitation.id, 'expired');
+      return NextResponse.json(
+        { error: 'Invitation has expired' },
+        { status: 400 }
+      );
+    }
     
     // Check if the invitation email matches the authenticated user's email
     if (invitation.email.toLowerCase() !== session.user.email?.toLowerCase()) {
@@ -118,7 +161,7 @@ export async function POST(
 // Decline an invitation
 export async function DELETE(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     // Check authentication
@@ -127,20 +170,27 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Await params before accessing its properties in Next.js 15+
     const { token } = await params;
     
-    // Validate the invitation token
-    const validation = await validateInvitationToken(token);
+    // Get the invitation
+    const invitation = await prisma.invitation.findUnique({
+      where: { token },
+    });
     
-    if (!validation.valid || !validation.invitation) {
+    if (!invitation) {
       return NextResponse.json(
-        { valid: false, error: validation.error },
-        { status: 400 }
+        { error: 'Invitation not found' },
+        { status: 404 }
       );
     }
     
-    const invitation = validation.invitation;
+    // Check if the invitation is still valid
+    if (invitation.status !== 'pending') {
+      return NextResponse.json(
+        { error: `Invitation has already been ${invitation.status}` },
+        { status: 400 }
+      );
+    }
     
     // Check if the invitation email matches the authenticated user's email
     if (invitation.email.toLowerCase() !== session.user.email?.toLowerCase()) {

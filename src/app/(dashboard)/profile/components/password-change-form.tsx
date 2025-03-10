@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,7 +17,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
 
 // Form validation schema
 const passwordChangeSchema = z
@@ -42,7 +42,6 @@ export function PasswordChangeForm() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { toast } = useToast();
   
   // Initialize form
   const form = useForm<PasswordChangeValues>({
@@ -75,8 +74,7 @@ export function PasswordChangeForm() {
         throw new Error(error.error || 'Failed to change password');
       }
       
-      toast({
-        title: 'Password changed',
+      toast.success('Password changed', {
         description: 'Your password has been successfully updated.',
       });
       
@@ -84,11 +82,7 @@ export function PasswordChangeForm() {
       form.reset();
     } catch (error) {
       console.error('Error changing password:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to change password',
-        variant: 'destructive',
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to change password');
     } finally {
       setIsSubmitting(false);
     }

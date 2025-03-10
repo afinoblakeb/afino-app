@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/components/ui/use-toast';
 
 // Form validation schema
 const inviteUserSchema = z.object({
@@ -55,7 +55,6 @@ export function InviteUserForm({
   onSuccess 
 }: InviteUserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   // Initialize form
   const form = useForm<InviteUserFormValues>({
@@ -86,10 +85,7 @@ export function InviteUserForm({
       }
       
       // Show success message
-      toast({
-        title: 'Invitation sent',
-        description: `An invitation has been sent to ${data.email}`,
-      });
+      toast.success(`An invitation has been sent to ${data.email}`);
       
       // Reset form
       form.reset();
@@ -102,11 +98,7 @@ export function InviteUserForm({
       console.error('Error sending invitation:', error);
       
       // Show error message
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to send invitation',
-        variant: 'destructive',
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to send invitation');
     } finally {
       setIsSubmitting(false);
     }
