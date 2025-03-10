@@ -1,9 +1,10 @@
-/**
- * Utility function to log the project structure to the console
- * This is useful for documentation and debugging purposes
- */
-export function logProjectStructure(): void {
-  console.log(`
+# Afino App Project Structure
+
+This document provides an overview of the Afino App project structure, highlighting the key directories and files.
+
+## Directory Tree
+
+```
 Afino App Directory Structure:
 ├── PROGRESS.md
 ├── README.md
@@ -165,40 +166,76 @@ Afino App Directory Structure:
 │           └── server.ts
 ├── tsconfig.json
 └── vercel.json
-`);
-}
+```
 
-/**
- * Utility function to log a simplified project structure to the console
- * This is useful for quick reference
- */
-export function logSimplifiedProjectStructure(): void {
-  console.log(`
-Afino App Simplified Structure:
-├── docs/ - Project documentation
-│   ├── feature-plans/ - Feature planning documents
-│   ├── technical/ - Technical documentation
-│   └── guides/ - User and developer guides
-├── src/
-│   ├── app/ - Next.js App Router pages and API routes
-│   ├── components/ - React components
-│   ├── services/ - Business logic services
-│   ├── utils/ - Utility functions
-│   ├── lib/ - Library integrations
-│   ├── providers/ - React context providers
-│   ├── hooks/ - Custom React hooks
-│   └── types/ - TypeScript type definitions
-├── prisma/ - Database schema and migrations
-├── public/ - Static assets
-└── scripts/ - Utility scripts
-`);
-}
+## Key Directories and Files
 
-// Example usage:
-// import { logProjectStructure, logSimplifiedProjectStructure } from '@/utils/logProjectStructure';
-// 
-// // Log the full project structure
-// logProjectStructure();
-// 
-// // Or log a simplified version
-// logSimplifiedProjectStructure(); 
+### Project Root
+
+- `PROGRESS.md`: Tracks project progress and next steps
+- `README.md`: Project overview and setup instructions
+- `components.json`: Configuration for Shadcn UI components
+- `next.config.js`: Next.js configuration
+- `prisma/schema.prisma`: Database schema definition
+- `tsconfig.json`: TypeScript configuration
+
+### Documentation (`docs/`)
+
+- `README.md`: Overview of the documentation structure
+- `feature-plans/`: Detailed plans for individual features
+- `technical/`: Technical documentation and implementation details
+- `guides/`: User and developer guides
+- `feature-roadmap.md`: Consolidated feature roadmap
+
+### Source Code (`src/`)
+
+- `app/`: Next.js App Router pages and API routes
+  - `(dashboard)/`: Dashboard-related pages
+  - `api/`: API routes for organizations and users
+  - `auth/`: Authentication-related pages
+  - `onboarding/`: User onboarding flow
+
+- `components/`: React components
+  - `auth/`: Authentication-related components
+  - `layout/`: Layout components
+  - `ui/`: UI components (Shadcn)
+
+- `services/`: Service layer for business logic
+  - `organizationService.ts`: Organization-related operations
+  - `roleService.ts`: Role management operations
+  - `userService.ts`: User-related operations
+
+- `utils/`: Utility functions
+  - `domainUtils.ts`: Domain-related utilities
+  - `logProjectStructure.ts`: Utility to log project structure
+  - `supabase/`: Supabase client utilities
+
+### Database (`prisma/`)
+
+- `schema.prisma`: Prisma schema definition
+- `migrations/`: Database migration files
+- `seed.ts`: Database seeding script
+
+### Public Assets (`public/`)
+
+- `afino-logo.svg`: Afino logo
+- Various SVG icons and assets
+
+### Scripts (`scripts/`)
+
+- `check-env.js`: Environment variable validation
+- `verify-build-parity.sh`: Build verification script
+- `print-directory-tree.js`: Directory tree generation script
+- `console-log-tree.js`: Script to generate console.log formatted tree
+
+## Architecture Overview
+
+The Afino App follows a modern Next.js application architecture with:
+
+1. **Next.js App Router**: For page routing and API routes
+2. **Prisma ORM**: For database access and migrations
+3. **Supabase**: For authentication and storage
+4. **Shadcn UI**: For UI components
+5. **Service Layer**: For business logic separation
+
+The application is structured to support multi-tenant organizations with role-based access control, user management, and organization management features. 
