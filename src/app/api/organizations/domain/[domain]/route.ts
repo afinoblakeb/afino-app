@@ -6,7 +6,8 @@ export async function GET(
   { params }: { params: { domain: string } }
 ) {
   try {
-    const domain = params.domain;
+    // Await params before accessing its properties in Next.js 15+
+    const { domain } = await params;
     
     if (!domain) {
       return NextResponse.json(

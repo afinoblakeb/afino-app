@@ -6,7 +6,8 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const slug = params.slug;
+    // Await params before accessing its properties in Next.js 15+
+    const { slug } = await params;
     
     // Check if the slug already exists
     const existingOrg = await prisma.organization.findUnique({

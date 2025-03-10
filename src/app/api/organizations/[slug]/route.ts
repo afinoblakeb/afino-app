@@ -12,7 +12,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const slug = params.slug;
+    // Await params before accessing its properties in Next.js 15+
+    const { slug } = await params;
     
     const organization = await prisma.organization.findUnique({
       where: { slug },
@@ -50,7 +51,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const slug = params.slug;
+    // Await params before accessing its properties in Next.js 15+
+    const { slug } = await params;
     const { name, domain } = await request.json();
     
     // Find the organization and check if the user is an admin
