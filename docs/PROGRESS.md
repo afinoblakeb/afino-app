@@ -61,8 +61,10 @@ This document tracks the progress of the Afino platform development.
     - [x] Implement organization settings
 12. Implement user invitation flow
     - [x] Create feature plan for user invitation
-    - [ ] Implement invitation form
-    - [ ] Implement invitation acceptance page
+    - [x] Implement invitation form
+    - [x] Implement invitation acceptance page
+    - [x] Implement invitation backend APIs
+    - [x] Add invitation management UI
 13. Implement user profile settings
     - [x] Create feature plan for user profile
     - [ ] Implement profile page
