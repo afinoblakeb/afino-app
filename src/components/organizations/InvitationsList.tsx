@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import {
   Table,
@@ -24,7 +25,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
 
 interface Invitation {
   id: string;
@@ -57,7 +57,6 @@ export function InvitationsList({
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedInvitation, setSelectedInvitation] = useState<Invitation | null>(null);
-  const { toast } = useToast();
 
   // Format the status for display
   const formatStatus = (status: string) => {
@@ -65,7 +64,7 @@ export function InvitationsList({
       case 'pending':
         return <Badge variant="outline">Pending</Badge>;
       case 'accepted':
-        return <Badge variant="success">Accepted</Badge>;
+        return <Badge variant="default">Accepted</Badge>;
       case 'declined':
         return <Badge variant="destructive">Declined</Badge>;
       case 'expired':
@@ -92,8 +91,7 @@ export function InvitationsList({
         throw new Error(error.error || 'Failed to resend invitation');
       }
       
-      toast({
-        title: 'Invitation resent',
+      toast.success('Invitation resent', {
         description: `Invitation to ${invitation.email} has been resent.`,
       });
       
@@ -101,10 +99,8 @@ export function InvitationsList({
       onUpdate();
     } catch (error) {
       console.error('Error resending invitation:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: error instanceof Error ? error.message : 'Failed to resend invitation',
-        variant: 'destructive',
       });
     } finally {
       setLoading({ ...loading, [invitation.id]: false });
@@ -136,8 +132,7 @@ export function InvitationsList({
         throw new Error(error.error || 'Failed to delete invitation');
       }
       
-      toast({
-        title: 'Invitation deleted',
+      toast.success('Invitation deleted', {
         description: `Invitation to ${selectedInvitation.email} has been deleted.`,
       });
       
@@ -145,10 +140,8 @@ export function InvitationsList({
       onUpdate();
     } catch (error) {
       console.error('Error deleting invitation:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: error instanceof Error ? error.message : 'Failed to delete invitation',
-        variant: 'destructive',
       });
     } finally {
       setLoading({ ...loading, [selectedInvitation.id]: false });
