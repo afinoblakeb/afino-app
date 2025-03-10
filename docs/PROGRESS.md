@@ -67,8 +67,9 @@ This document tracks the progress of the Afino platform development.
     - [x] Add invitation management UI
 13. Implement user profile settings
     - [x] Create feature plan for user profile
-    - [ ] Implement profile page
-    - [ ] Implement settings forms
+    - [x] Implement profile page
+    - [x] Implement settings forms
+    - [x] Implement profile API endpoints
 14. Implement role management
     - [x] Create feature plan for role management
     - [ ] Implement role creation and editing

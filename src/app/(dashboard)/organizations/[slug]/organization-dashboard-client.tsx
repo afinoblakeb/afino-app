@@ -48,13 +48,11 @@ export default function OrganizationDashboardClient({ organization }: Organizati
   const router = useRouter();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
 
   // Fetch invitations
   const fetchInvitations = async () => {
     try {
-      setIsLoading(true);
       const response = await fetch(`/api/organizations/${organization.slug}/invitations`);
       
       if (!response.ok) {
@@ -66,8 +64,6 @@ export default function OrganizationDashboardClient({ organization }: Organizati
       setInvitations(data.invitations || []);
     } catch (error) {
       console.error('Error loading invitations:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -101,6 +97,7 @@ export default function OrganizationDashboardClient({ organization }: Organizati
   useEffect(() => {
     fetchRoles();
     fetchInvitations();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization.slug]);
 
   // Handler for when invitation is sent
