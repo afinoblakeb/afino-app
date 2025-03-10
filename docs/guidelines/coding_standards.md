@@ -107,7 +107,7 @@ export default UserProfile;
 ### Data Fetching
 
 - **Use SWR or React Query**: For client-side data fetching with caching and revalidation.
-- **Server components**: Leverage Next.js 15 server components for data fetching when appropriate.
+- **Server components**: Leverage Next.js 15.2.1 server components for data fetching when appropriate.
 - **Error boundaries**: Implement error boundaries for handling data fetching errors.
 
 ## File Structure

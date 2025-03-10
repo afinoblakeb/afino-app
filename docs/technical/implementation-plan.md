@@ -138,7 +138,7 @@ The implementation will follow a feature-driven development approach, with each 
 
 ## Dependencies and Prerequisites
 
-- Next.js 14+ with App Router
+- Next.js 15.2.1 with App Router
 - TypeScript 5+
 - Tailwind CSS
 - Shadcn UI
