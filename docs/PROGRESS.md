@@ -55,10 +55,10 @@ This document tracks the progress of the Afino platform development.
    - [x] Implement sign-up page
    - [x] Implement sign-in page
    - [x] Implement password reset flow
-11. Implement organization creation flow
+11. ✅ Implement organization creation flow
     - [x] Create feature plan for organization creation
-    - [ ] Implement organization creation page
-    - [ ] Implement organization settings
+    - [x] Implement organization creation page
+    - [x] Implement organization settings
 12. Implement user invitation flow
     - [x] Create feature plan for user invitation
     - [ ] Implement invitation form
