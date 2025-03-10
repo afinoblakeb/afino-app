@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { createOrganization, getOrganizationBySlug } from '@/services/organizationService';
 import { getOrCreateAdminRoleForOrganization } from '@/services/roleService';
 import { addUserToOrganization } from '@/services/organizationService';
@@ -31,8 +32,8 @@ export async function POST(request: Request) {
     
     const { name, slug, domain } = body;
     
-    // Get the current user
-    const supabase = createClientComponentClient();
+    // Get the current user using the route handler client with properly awaited cookies
+    const supabase = createRouteHandlerClient({ cookies });
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {

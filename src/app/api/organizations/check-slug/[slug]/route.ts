@@ -1,36 +1,22 @@
 import { NextResponse } from 'next/server';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { getOrganizationBySlug } from '@/services/organizationService';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { slug } = await params;
+    const slug = params.slug;
     
-    if (!slug) {
-      return NextResponse.json(
-        { error: 'Slug is required' },
-        { status: 400 }
-      );
-    }
+    // Check if the slug already exists
+    const existingOrg = await prisma.organization.findUnique({
+      where: { slug },
+    });
     
-    // Get the current user
-    const supabase = createClientComponentClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    // Check if organization with this slug exists
-    const organization = await getOrganizationBySlug(slug);
-    
-    return NextResponse.json({ exists: !!organization });
+    return NextResponse.json({ 
+      available: !existingOrg,
+      slug 
+    });
   } catch (error) {
     console.error('Error checking slug availability:', error);
     return NextResponse.json(

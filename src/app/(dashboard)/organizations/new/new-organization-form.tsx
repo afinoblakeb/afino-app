@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { generateSlug, isValidSlug } from '@/utils/slugUtils';
 
 // Form validation schema
 const organizationFormSchema = z.object({
@@ -23,7 +24,7 @@ const organizationFormSchema = z.object({
     message: "Slug must be at least 2 characters.",
   }).max(50, {
     message: "Slug must not exceed 50 characters.",
-  }).regex(/^[a-z0-9\-]+$/, {
+  }).refine(isValidSlug, {
     message: "Slug can only contain lowercase letters, numbers, and hyphens.",
   }),
 });
@@ -45,14 +46,6 @@ export default function NewOrganizationForm() {
       slug: "",
     },
   });
-
-  // Generate slug from name
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-  };
 
   // Handle name change to auto-generate slug
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +69,7 @@ export default function NewOrganizationForm() {
       setIsCheckingSlug(true);
       const response = await fetch(`/api/organizations/check-slug/${slug}`);
       const data = await response.json();
-      setSlugAvailable(!data.exists);
+      setSlugAvailable(data.available);
     } catch (error) {
       console.error('Error checking slug:', error);
       setSlugAvailable(null);
@@ -95,7 +88,7 @@ export default function NewOrganizationForm() {
       const slugCheckResponse = await fetch(`/api/organizations/check-slug/${data.slug}`);
       const slugCheckData = await slugCheckResponse.json();
       
-      if (slugCheckData.exists) {
+      if (!slugCheckData.available) {
         setError('This slug is already taken. Please choose another one.');
         setIsSubmitting(false);
         return;
