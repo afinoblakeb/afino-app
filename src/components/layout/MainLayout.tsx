@@ -136,14 +136,16 @@ export function MainLayout({ children }: MainLayoutProps) {
             onOrganizationChange={handleOrganizationChange}
           />
         )}
-        <main className="flex-1 overflow-y-auto relative">
-          <div className="p-4">
-            <SidebarTrigger className="mb-6" />
-          </div>
-          <div className="px-12 md:px-12 w-full">
-            {children}
-          </div>
-        </main>
+        <div className="flex-1 relative">
+          <main className="h-full overflow-y-auto">
+            <div className="p-4">
+              <SidebarTrigger className="mb-6" />
+            </div>
+            <div className="px-12 md:px-12 w-full">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );

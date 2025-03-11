@@ -53,6 +53,25 @@ export default function ProfileClient() {
   const [organizations, setOrganizations] = useState<UserOrganization[]>([]);
   const [error, setError] = useState<string | null>(null);
   const isMounted = useRef(false);
+  const fetchTimeRef = useRef<number>(0);
+
+  // Add a visibility change event handler to prevent unnecessary reloads
+  useEffect(() => {
+    // Only fetch data on initial mount, not on visibility changes
+    const handleVisibilityChange = () => {
+      // If the page becomes visible and it's been less than 5 minutes since last fetch, don't refetch
+      if (document.visibilityState === 'visible' && 
+          Date.now() - fetchTimeRef.current < 5 * 60 * 1000) {
+        return;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     // Prevent repeated fetching that can cause refreshes
@@ -65,7 +84,7 @@ export default function ProfileClient() {
         
         // Fetch user profile data
         const profileResponse = await fetch('/api/user/profile', {
-          next: { revalidate: 60 } // Revalidate every 60 seconds instead of on every focus
+          cache: 'default', // Use browser's standard cache control
         });
         
         if (!profileResponse.ok) {
@@ -77,7 +96,7 @@ export default function ProfileClient() {
         
         // Fetch user organizations
         const organizationsResponse = await fetch('/api/users/me/organizations', {
-          next: { revalidate: 60 } // Revalidate every 60 seconds instead of on every focus
+          cache: 'default', // Use browser's standard cache control
         });
         
         if (!organizationsResponse.ok) {
@@ -87,6 +106,8 @@ export default function ProfileClient() {
         const organizationsData = await organizationsResponse.json();
         setOrganizations(organizationsData.organizations);
         
+        // Update the fetch time
+        fetchTimeRef.current = Date.now();
       } catch (err) {
         console.error('Error fetching profile data:', err);
         setError(err instanceof Error ? err.message : 'An error occurred while fetching profile data');
@@ -157,7 +178,7 @@ export default function ProfileClient() {
                 try {
                   // Fetch user profile data
                   const profileResponse = await fetch('/api/user/profile', {
-                    next: { revalidate: 0 } // Force revalidation
+                    cache: 'reload', // Force a reload of the resource
                   });
                   
                   if (!profileResponse.ok) {
@@ -169,7 +190,7 @@ export default function ProfileClient() {
                   
                   // Fetch user organizations
                   const organizationsResponse = await fetch('/api/users/me/organizations', {
-                    next: { revalidate: 0 } // Force revalidation
+                    cache: 'reload', // Force a reload of the resource
                   });
                   
                   if (!organizationsResponse.ok) {
@@ -179,6 +200,8 @@ export default function ProfileClient() {
                   const organizationsData = await organizationsResponse.json();
                   setOrganizations(organizationsData.organizations);
                   
+                  // Update the fetch time
+                  fetchTimeRef.current = Date.now();
                 } catch (err) {
                   console.error('Error fetching profile data:', err);
                   setError(err instanceof Error ? err.message : 'An error occurred while fetching profile data');

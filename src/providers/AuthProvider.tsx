@@ -18,7 +18,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastChecked, setLastChecked] = useState(0);
   const router = useRouter();
+
+  // Add a visibility change event handler to prevent unnecessary session checks
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      // Only check session on visibility change if it's been more than 5 minutes
+      if (document.visibilityState === 'visible' && 
+          Date.now() - lastChecked > 5 * 60 * 1000) {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            setSession(data.session);
+            setUser(data.session.user);
+          }
+          setLastChecked(Date.now());
+        } catch (error) {
+          console.error('Error checking session on visibility change:', error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [lastChecked]);
 
   // Check for hash fragment in URL (from OAuth redirect)
   useEffect(() => {
@@ -59,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setSession(data.session);
         setUser(data.session?.user || null);
+        setLastChecked(Date.now());
         
         // If we have a session but are on an auth page, redirect to dashboard
         if (data.session && window.location.pathname.startsWith('/auth')) {
@@ -78,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user || null);
         setIsLoading(false);
+        setLastChecked(Date.now());
         
         // Handle redirect after sign in
         if (event === 'SIGNED_IN' && session) {
