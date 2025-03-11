@@ -140,12 +140,11 @@ export function MainLayout({ children }: MainLayoutProps) {
             onOrganizationChange={handleOrganizationChange}
           />
         )}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto w-full">
           <div className="p-4">
             <SidebarTrigger className="mb-6" />
           </div>
-          <div className={isFullWidthPage ? "px-4 md:px-6 w-full max-w-full" : "container mx-auto px-4 md:px-6"}>
-            {!isFullWidthPage && <h1 className="text-2xl font-bold mb-6">Afino Platform</h1>}
+          <div className={isFullWidthPage ? "px-4 md:px-6 w-full max-w-full" : "w-full px-4 md:px-6"}>
             {children}
           </div>
         </main>
