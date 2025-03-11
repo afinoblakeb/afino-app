@@ -55,63 +55,113 @@ export default function ProfileClient() {
   const isMounted = useRef(false);
   const fetchTimeRef = useRef<number>(0);
 
-  // Add a visibility change event handler to prevent unnecessary reloads
-  useEffect(() => {
-    // Only fetch data on initial mount, not on visibility changes
-    const handleVisibilityChange = () => {
-      // Don't do anything on visibility change - this prevents unnecessary reloads
-    };
+  // DISABLED: Visibility change event handler - completely disabled to prevent reloads
+  // useEffect(() => {
+  //   // Only fetch data on initial mount, not on visibility changes
+  //   const handleVisibilityChange = () => {
+  //     // Don't do anything on visibility change - this prevents unnecessary reloads
+  //   };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+  //   document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
+  //   return () => {
+  //     document.removeEventListener('visibilitychange', handleVisibilityChange);
+  //   };
+  // }, []);
 
   useEffect(() => {
+    console.log('[ProfileClient] Initial data fetch useEffect triggered');
+    
+    // EMERGENCY FIX: Implement a throttle using localStorage to prevent repeated API calls
+    const lastFetchTime = localStorage.getItem('lastProfileFetch');
+    const now = Date.now();
+    
+    // If we've fetched within the last 10 seconds, don't fetch again
+    if (lastFetchTime && now - parseInt(lastFetchTime) < 10000) {
+      console.log('[ProfileClient] Skipping fetch - too recent (within 10s)');
+      
+      // Try to use cached data if available
+      const cachedProfile = localStorage.getItem('cachedProfile');
+      const cachedOrgs = localStorage.getItem('cachedOrganizations');
+      
+      if (cachedProfile && cachedOrgs) {
+        try {
+          const parsedProfile = JSON.parse(cachedProfile);
+          const parsedOrgs = JSON.parse(cachedOrgs);
+          
+          console.log('[ProfileClient] Using cached data - profile and', parsedOrgs.length, 'organizations');
+          setProfileData(parsedProfile);
+          setOrganizations(parsedOrgs);
+          setIsLoading(false);
+          return;
+        } catch (e) {
+          console.error('[ProfileClient] Error parsing cached data:', e);
+        }
+      }
+      
+      return;
+    }
+    
     // Prevent repeated fetching that can cause refreshes
-    if (isMounted.current) return;
+    if (isMounted.current) {
+      console.log('[ProfileClient] Already mounted, skipping fetch');
+      return;
+    }
     isMounted.current = true;
 
     async function fetchProfileData() {
+      console.log('[ProfileClient] Fetching profile data...');
       try {
         setIsLoading(true);
         
         // Fetch user profile data
+        console.log('[ProfileClient] Fetching user profile...');
         const profileResponse = await fetch('/api/user/profile', {
           cache: 'default', // Use browser's standard cache control
         });
         
         if (!profileResponse.ok) {
+          console.error('[ProfileClient] Failed to fetch profile data:', profileResponse.status);
           const errorData = await profileResponse.json();
           throw new Error(errorData.error || 'Failed to fetch profile data');
         }
         const profileData = await profileResponse.json();
+        console.log('[ProfileClient] Profile data fetched successfully');
         setProfileData(profileData);
         
+        // Cache the profile data
+        localStorage.setItem('cachedProfile', JSON.stringify(profileData));
+        
         // Fetch user organizations
+        console.log('[ProfileClient] Fetching user organizations...');
         const organizationsResponse = await fetch('/api/users/me/organizations', {
           cache: 'default', // Use browser's standard cache control
         });
         
         if (!organizationsResponse.ok) {
+          console.error('[ProfileClient] Failed to fetch organizations:', organizationsResponse.status);
           const errorData = await organizationsResponse.json();
           throw new Error(errorData.error || 'Failed to fetch organizations');
         }
         const organizationsData = await organizationsResponse.json();
+        console.log('[ProfileClient] Organizations fetched successfully:', organizationsData.organizations?.length || 0);
         setOrganizations(organizationsData.organizations);
+        
+        // Cache the organizations data
+        localStorage.setItem('cachedOrganizations', JSON.stringify(organizationsData.organizations));
+        localStorage.setItem('lastProfileFetch', now.toString());
         
         // Update the fetch time
         fetchTimeRef.current = Date.now();
       } catch (err) {
-        console.error('Error fetching profile data:', err);
+        console.error('[ProfileClient] Error fetching profile data:', err);
         setError(err instanceof Error ? err.message : 'An error occurred while fetching profile data');
         toast.error('Error loading profile data', {
           description: err instanceof Error ? err.message : 'Please try again later',
         });
       } finally {
         setIsLoading(false);
+        console.log('[ProfileClient] Fetch completed');
       }
     }
     
@@ -165,47 +215,69 @@ export default function ProfileClient() {
               Return to Dashboard
             </Button>
             <Button onClick={() => {
+              console.log('[ProfileClient] Try Again button clicked');
               setError(null);
               setIsLoading(true);
               isMounted.current = false;
               
               // Re-fetch data without a full page refresh
               async function refetchData() {
+                console.log('[ProfileClient] Refetching data...');
+                
+                // Force a refresh by clearing the cache timestamps
+                localStorage.removeItem('lastProfileFetch');
+                localStorage.removeItem('lastOrganizationsFetch');
+                
                 try {
                   // Fetch user profile data
+                  console.log('[ProfileClient] Refetching user profile...');
                   const profileResponse = await fetch('/api/user/profile', {
                     cache: 'reload', // Force a reload of the resource
                   });
                   
                   if (!profileResponse.ok) {
+                    console.error('[ProfileClient] Failed to refetch profile data:', profileResponse.status);
                     const errorData = await profileResponse.json();
                     throw new Error(errorData.error || 'Failed to fetch profile data');
                   }
                   const profileData = await profileResponse.json();
+                  console.log('[ProfileClient] Profile data refetched successfully');
                   setProfileData(profileData);
                   
+                  // Cache the profile data
+                  localStorage.setItem('cachedProfile', JSON.stringify(profileData));
+                  
                   // Fetch user organizations
+                  console.log('[ProfileClient] Refetching user organizations...');
                   const organizationsResponse = await fetch('/api/users/me/organizations', {
                     cache: 'reload', // Force a reload of the resource
                   });
                   
                   if (!organizationsResponse.ok) {
+                    console.error('[ProfileClient] Failed to refetch organizations:', organizationsResponse.status);
                     const errorData = await organizationsResponse.json();
                     throw new Error(errorData.error || 'Failed to fetch organizations');
                   }
                   const organizationsData = await organizationsResponse.json();
+                  console.log('[ProfileClient] Organizations refetched successfully:', organizationsData.organizations?.length || 0);
                   setOrganizations(organizationsData.organizations);
+                  
+                  // Cache the organizations data
+                  localStorage.setItem('cachedOrganizations', JSON.stringify(organizationsData.organizations));
+                  localStorage.setItem('lastProfileFetch', Date.now().toString());
+                  localStorage.setItem('lastOrganizationsFetch', Date.now().toString());
                   
                   // Update the fetch time
                   fetchTimeRef.current = Date.now();
                 } catch (err) {
-                  console.error('Error fetching profile data:', err);
+                  console.error('[ProfileClient] Error refetching profile data:', err);
                   setError(err instanceof Error ? err.message : 'An error occurred while fetching profile data');
                   toast.error('Error loading profile data', {
                     description: err instanceof Error ? err.message : 'Please try again later',
                   });
                 } finally {
                   setIsLoading(false);
+                  console.log('[ProfileClient] Refetch completed');
                 }
               }
               

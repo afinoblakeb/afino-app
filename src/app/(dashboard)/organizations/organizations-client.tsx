@@ -37,38 +37,72 @@ export default function OrganizationsClient() {
   const isMounted = useRef(false);
 
   useEffect(() => {
+    console.log('[OrganizationsClient] Initial data fetch useEffect triggered');
+    
+    // EMERGENCY FIX: Implement a throttle using localStorage to prevent repeated API calls
+    const lastFetchTime = localStorage.getItem('lastOrganizationsFetch');
+    const now = Date.now();
+    
+    // If we've fetched within the last 10 seconds, don't fetch again
+    if (lastFetchTime && now - parseInt(lastFetchTime) < 10000) {
+      console.log('[OrganizationsClient] Skipping fetch - too recent (within 10s)');
+      
+      // Try to use cached data if available
+      const cachedOrgs = localStorage.getItem('cachedOrganizations');
+      if (cachedOrgs) {
+        try {
+          const parsedOrgs = JSON.parse(cachedOrgs);
+          console.log('[OrganizationsClient] Using cached organizations data:', parsedOrgs.length);
+          setOrganizations(parsedOrgs);
+          setIsLoading(false);
+          return;
+        } catch (e) {
+          console.error('[OrganizationsClient] Error parsing cached organizations:', e);
+        }
+      }
+      
+      return;
+    }
+    
     // Prevent repeated fetching that can cause refreshes
-    if (isMounted.current) return;
+    if (isMounted.current) {
+      console.log('[OrganizationsClient] Already mounted, skipping fetch');
+      return;
+    }
     isMounted.current = true;
     
     async function fetchOrganizations() {
+      console.log('[OrganizationsClient] Fetching organizations...');
       try {
         setIsLoading(true);
         
         const response = await fetch('/api/users/me/organizations', {
-          // Ensure we're not using any cached data
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
+          // Use standard browser caching instead of no-store
+          cache: 'default',
         });
         
-        if (!response.ok) {
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[OrganizationsClient] Organizations fetched successfully:', data.organizations?.length || 0);
+          setOrganizations(data.organizations);
+          
+          // Cache the organizations data
+          localStorage.setItem('cachedOrganizations', JSON.stringify(data.organizations));
+          localStorage.setItem('lastOrganizationsFetch', now.toString());
+        } else {
+          console.error('[OrganizationsClient] Failed to fetch organizations:', response.status);
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to fetch organizations');
         }
-        
-        const data = await response.json();
-        setOrganizations(data.organizations);
-        
       } catch (err) {
-        console.error('Error fetching organizations:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        console.error('[OrganizationsClient] Error fetching organizations:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching organizations');
         toast.error('Error loading organizations', {
           description: err instanceof Error ? err.message : 'Please try again later',
         });
       } finally {
         setIsLoading(false);
+        console.log('[OrganizationsClient] Fetch completed');
       }
     }
     
