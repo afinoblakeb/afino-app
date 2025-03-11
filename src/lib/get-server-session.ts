@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
 
 export async function getServerSession() {
-  const cookieStore = cookies()
-  
+  // Create a Supabase client without cookies for server components
+  // This will rely on the cookies being sent automatically by the browser
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -14,8 +13,11 @@ export async function getServerSession() {
         detectSessionInUrl: false,
       },
       global: {
-        headers: {
-          cookie: cookieStore.toString(),
+        fetch: async (url, options = {}) => {
+          return fetch(url, {
+            ...options,
+            credentials: 'include',
+          })
         },
       },
     }

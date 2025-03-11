@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createUserProfile } from '@/services/userService'
 import { PrismaClient } from '@prisma/client'
@@ -12,8 +11,8 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get('next') || '/dashboard'
 
   if (code) {
-    // Get the cookies from the request
-    const cookieStore = cookies()
+    // Extract cookies from the request headers directly
+    const cookieHeader = request.headers.get('cookie') || ''
     
     // Create a Supabase client with the latest approach
     const supabase = createClient(
@@ -27,7 +26,7 @@ export async function GET(request: Request) {
         },
         global: {
           headers: {
-            cookie: cookieStore.toString(),
+            cookie: cookieHeader,
           },
         },
       }

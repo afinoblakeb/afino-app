@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { createApiSupabaseClient } from '@/utils/supabase/api-client';
 
 // Get the current user's profile
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Get the user session with the new client approach
-    const supabase = createApiSupabaseClient();
+    const supabase = createApiSupabaseClient(request);
     
     // Use getUser() instead of getSession() to avoid warning
     const { data: { user }, error: userError } = await supabase.auth.getUser();
