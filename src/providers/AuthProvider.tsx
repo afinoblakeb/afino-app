@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { createBrowserSupabaseClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -24,8 +24,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Track if this is an initial auth check or a subsequent check
   const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
   
-  // Create a Supabase client instance
-  const supabase = createBrowserSupabaseClient();
+  // Create a Supabase client instance using a ref to avoid dependency issues
+  const supabaseRef = useRef(createBrowserSupabaseClient());
+  const supabase = supabaseRef.current;
 
   // Check for hash fragment in URL (from OAuth redirect)
   useEffect(() => {
@@ -70,7 +71,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[AuthProvider] Session check error:', error);
+          return;
+        }
+        
         console.log('[AuthProvider] Session check result:', !!data.session);
         
         setSession(data.session);
@@ -95,10 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('[AuthProvider] Setting up auth state change listener');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[AuthProvider] Auth state changed:', event);
+        console.log('[AuthProvider] Auth state changed:', event, 'Session exists:', !!session);
         
         // Only process relevant events
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
           setSession(session);
           setUser(session?.user || null);
           setIsLoading(false);
@@ -106,8 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Invalidate all queries to refetch data with new auth state
           queryClient.invalidateQueries();
           
-          // Only handle redirects on explicit sign-in/sign-out actions, not token refreshes
-          if (event === 'SIGNED_IN' && session && !initialAuthCheckComplete) {
+          // Handle redirects
+          if (event === 'SIGNED_IN' && session) {
             console.log('[AuthProvider] User signed in, redirecting to dashboard');
             router.push('/dashboard');
           } else if (event === 'SIGNED_OUT') {
@@ -129,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthProvider] Cleaning up auth state change listener');
       subscription.unsubscribe();
     };
-  }, [router, queryClient, initialAuthCheckComplete, supabase]);
+  }, [router, queryClient, initialAuthCheckComplete]);
 
   const signOut = async () => {
     console.log('[AuthProvider] Sign out initiated');
