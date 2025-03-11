@@ -1,9 +1,9 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { createBrowserSupabaseClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 
 type AuthContextType = {
@@ -20,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   // Track if this is an initial auth check or a subsequent check
   const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
@@ -27,6 +28,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Create a Supabase client instance using a ref to avoid dependency issues
   const supabaseRef = useRef(createBrowserSupabaseClient());
   const supabase = supabaseRef.current;
+
+  // Handle OAuth callback
+  const handleOAuthCallback = useCallback(async () => {
+    // Check if we're on the callback page
+    if (typeof window !== 'undefined' && pathname === '/auth/callback') {
+      console.log('[AuthProvider] On callback page, handling OAuth callback');
+      
+      try {
+        // The code and code_verifier are automatically handled by Supabase
+        // Just get the session
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[AuthProvider] Error getting session on callback page:', error);
+          return;
+        }
+        
+        if (data.session) {
+          console.log('[AuthProvider] Session found on callback page, redirecting to dashboard');
+          // Redirect to dashboard
+          router.push('/dashboard');
+        } else {
+          console.log('[AuthProvider] No session found on callback page');
+        }
+      } catch (error) {
+        console.error('[AuthProvider] Error handling OAuth callback:', error);
+      }
+    }
+  }, [pathname, router]);
 
   // Check for hash fragment in URL (from OAuth redirect)
   useEffect(() => {
@@ -64,6 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkHashFragment();
   }, []);
 
+  // Handle OAuth callback when on the callback page
+  useEffect(() => {
+    handleOAuthCallback();
+  }, [handleOAuthCallback]);
+
   useEffect(() => {
     console.log('[AuthProvider] Initial session check');
     
@@ -85,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // If we have a session but are on an auth page, redirect to dashboard
         // ONLY redirect if we're on an auth page, not for general session checks
-        if (data.session && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
+        if (data.session && typeof window !== 'undefined' && pathname?.startsWith('/auth') && pathname !== '/auth/callback') {
           console.log('[AuthProvider] Redirecting from auth page to dashboard');
           router.push('/dashboard');
         }
@@ -136,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthProvider] Cleaning up auth state change listener');
       subscription.unsubscribe();
     };
-  }, [router, queryClient, initialAuthCheckComplete]);
+  }, [router, queryClient, initialAuthCheckComplete, pathname]);
 
   const signOut = async () => {
     console.log('[AuthProvider] Sign out initiated');

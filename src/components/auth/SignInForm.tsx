@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+import { createBrowserSupabaseClient } from '@/utils/supabase/client';
 
 // Form validation schema
 const signInSchema = z.object({
@@ -40,20 +40,29 @@ export default function SignInForm() {
     setFormError(null);
 
     try {
-      const supabase = createClient();
+      const supabase = createBrowserSupabaseClient();
+      
+      // Sign in with Google using PKCE flow
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          skipBrowserRedirect: false,
         },
       });
 
       if (error) {
+        console.error('Google sign-in error:', error);
         setFormError(error.message);
         setIsGoogleLoading(false);
       }
       // The redirect will be handled by Supabase
-    } catch {
+    } catch (error) {
+      console.error('Unexpected error during Google sign-in:', error);
       setFormError('An unexpected error occurred. Please try again.');
       setIsGoogleLoading(false);
     }
@@ -64,7 +73,7 @@ export default function SignInForm() {
     setFormError(null);
 
     try {
-      const supabase = createClient();
+      const supabase = createBrowserSupabaseClient();
       // Sign in with Supabase
       const { data: userData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
@@ -82,7 +91,8 @@ export default function SignInForm() {
         router.push('/dashboard');
         router.refresh();
       }
-    } catch {
+    } catch (error) {
+      console.error('Unexpected error during email sign-in:', error);
       setFormError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }
