@@ -140,7 +140,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="p-4">
             <SidebarTrigger className="mb-6" />
           </div>
-          <div className="px-4 md:px-6">
+          <div className="px-4 md:px-6 w-full">
             {children}
           </div>
         </main>
