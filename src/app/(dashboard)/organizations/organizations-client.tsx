@@ -122,7 +122,7 @@ export default function OrganizationsClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
         <Button onClick={() => router.push('/organizations/new')}>

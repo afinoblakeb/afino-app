@@ -166,7 +166,7 @@ export default function ProfileClient() {
 
   // Successful state
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
         <p className="text-muted-foreground">
@@ -182,7 +182,7 @@ export default function ProfileClient() {
         avatarUrl={profileData.avatarUrl}
       />
       
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="personal">Personal Info</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>

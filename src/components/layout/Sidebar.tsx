@@ -283,14 +283,14 @@ export function AppSidebar({
 
         <SidebarFooter>
           <Separator />
-          <SidebarMenu>
+          {/* <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={() => router.push('/profile')}>
                 <User className="h-4 w-4 mr-2" />
                 <span className="group-data-[collapsible=icon]:hidden">My Profile</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          </SidebarMenu>
+          </SidebarMenu> */}
           <div className="p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
