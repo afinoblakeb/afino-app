@@ -27,6 +27,7 @@ const organizationFormSchema = z.object({
   }).refine(isValidSlug, {
     message: "Slug can only contain lowercase letters, numbers, and hyphens.",
   }),
+  domain: z.string().optional(),
 });
 
 type OrganizationFormValues = z.infer<typeof organizationFormSchema>;
@@ -44,6 +45,7 @@ export default function NewOrganizationForm() {
     defaultValues: {
       name: "",
       slug: "",
+      domain: "",
     },
   });
 
@@ -103,6 +105,7 @@ export default function NewOrganizationForm() {
         body: JSON.stringify({
           name: data.name,
           slug: data.slug,
+          domain: data.domain && data.domain.trim() !== '' ? data.domain.trim() : null,
         }),
       });
 
@@ -197,6 +200,26 @@ export default function NewOrganizationForm() {
                     </FormControl>
                     <FormDescription>
                       This will be used for your organization&apos;s URL.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="domain"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Domain (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        placeholder="acme.com" 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      The domain associated with your organization. Leave blank if none.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

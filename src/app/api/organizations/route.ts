@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { createOrganization, getOrganizationBySlug } from '@/services/organizationService';
+import { createOrganization, getOrganizationBySlug, findOrganizationByDomain } from '@/services/organizationService';
 import { getOrCreateAdminRoleForOrganization } from '@/services/roleService';
 import { addUserToOrganization } from '@/services/organizationService';
 import { extractDomain } from '@/utils/domainUtils';
@@ -70,6 +70,17 @@ export async function POST(request: Request) {
     
     // If domain is not provided, extract it from the user's email
     const orgDomain = domain || (user.email ? extractDomain(user.email) : null);
+    
+    // Check if domain is already in use (if a domain is provided)
+    if (orgDomain) {
+      const existingOrgWithDomain = await findOrganizationByDomain(orgDomain);
+      if (existingOrgWithDomain) {
+        return NextResponse.json(
+          { error: 'An organization with this domain already exists' },
+          { status: 400 }
+        );
+      }
+    }
     
     // Create the organization
     const organization = await createOrganization(name, orgDomain, slug);

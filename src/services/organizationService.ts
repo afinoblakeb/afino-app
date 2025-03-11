@@ -68,10 +68,13 @@ export async function createOrganization(
   // Generate slug if not provided
   const orgSlug = slug || generateSlug(name);
   
+  // If domain is empty string, set it to null to avoid unique constraint issues
+  const normalizedDomain = domain && domain.trim() !== '' ? domain.trim() : null;
+  
   const organization = await prisma.organization.create({
     data: {
       name,
-      domain,
+      domain: normalizedDomain,
       slug: orgSlug,
     },
   });
