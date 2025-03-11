@@ -2,17 +2,19 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { randomUUID } from 'crypto';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    // Get the organization ID
-    const { id } = params;
-    if (!id) {
+    // Await params before accessing its properties in Next.js 15+
+    const { slug } = await params;
+    
+    if (!slug) {
       return NextResponse.json(
-        { error: 'Organization ID is required' },
+        { error: 'Organization slug is required' },
         { status: 400 }
       );
     }
@@ -40,7 +42,7 @@ export async function POST(
     
     // Check if the organization exists
     const organization = await prisma.organization.findUnique({
-      where: { id },
+      where: { slug },
     });
     
     if (!organization) {
@@ -54,7 +56,7 @@ export async function POST(
     const membership = await prisma.userOrganization.findFirst({
       where: {
         userId: user.id,
-        organizationId: id,
+        organizationId: organization.id,
       },
     });
     
@@ -68,8 +70,8 @@ export async function POST(
     // Check if user already has a pending invitation
     const existingInvitation = await prisma.invitation.findFirst({
       where: {
-        email: user.email,
-        organizationId: id,
+        email: user.email || '',
+        organizationId: organization.id,
         status: 'PENDING',
       },
     });
@@ -81,20 +83,37 @@ export async function POST(
       );
     }
     
-    // Create a membership request (using the invitation model with type = 'REQUEST')
-    const request = await prisma.invitation.create({
+    // Find the member role for this organization
+    const memberRole = await prisma.role.findFirst({
+      where: {
+        organizationId: organization.id,
+        name: 'Member', // Assuming there's a standard 'Member' role
+      },
+    });
+    
+    if (!memberRole) {
+      return NextResponse.json(
+        { error: 'Default role not found for this organization' },
+        { status: 500 }
+      );
+    }
+    
+    // Create a membership request (using the invitation model)
+    const membershipRequest = await prisma.invitation.create({
       data: {
-        email: user.email,
-        type: 'REQUEST',
+        email: user.email || '',
+        token: randomUUID(),
         status: 'PENDING',
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         organization: {
-          connect: { id },
+          connect: { id: organization.id },
+        },
+        role: {
+          connect: { id: memberRole.id },
         },
         invitedBy: {
           connect: { id: user.id },
         },
-        // Use a default member role ID (assuming 2 is the member role ID)
-        roleId: '2',
       },
     });
     
@@ -102,7 +121,7 @@ export async function POST(
     
     return NextResponse.json({
       message: 'Access request sent successfully',
-      requestId: request.id,
+      requestId: membershipRequest.id,
     });
   } catch (error) {
     console.error('Error requesting organization access:', error);

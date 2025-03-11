@@ -65,7 +65,7 @@ export default function JoinOrganizationPage() {
     
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/organizations/${organizationDetails.id}/request-access`, {
+      const response = await fetch(`/api/organizations/${organizationDetails.slug}/request-access`, {
         method: 'POST',
       });
       

@@ -5,11 +5,12 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { domain: string } }
+  { params }: { params: Promise<{ domain: string }> }
 ) {
   try {
-    // Get the domain/slug parameter
-    const { domain } = params;
+    // Await params before accessing its properties in Next.js 15+
+    const { domain } = await params;
+    
     if (!domain) {
       return NextResponse.json(
         { error: 'Domain or slug is required' },
