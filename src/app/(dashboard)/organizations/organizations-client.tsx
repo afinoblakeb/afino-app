@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlusCircle, Settings, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,15 +31,27 @@ interface UserOrganization {
 
 export default function OrganizationsClient() {
   const router = useRouter();
-  const [userOrganizations, setUserOrganizations] = useState<UserOrganization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [organizations, setOrganizations] = useState<UserOrganization[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(false);
 
   useEffect(() => {
+    // Prevent repeated fetching that can cause refreshes
+    if (isMounted.current) return;
+    isMounted.current = true;
+    
     async function fetchOrganizations() {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/users/me/organizations');
+        
+        const response = await fetch('/api/users/me/organizations', {
+          // Ensure we're not using any cached data
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -47,10 +59,12 @@ export default function OrganizationsClient() {
         }
         
         const data = await response.json();
-        setUserOrganizations(data.organizations);
+        setOrganizations(data.organizations);
+        
+        console.log('Organizations loaded:', data.organizations);
       } catch (err) {
         console.error('Error fetching organizations:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching organizations');
+        setError(err instanceof Error ? err.message : 'An error occurred');
         toast.error('Error loading organizations', {
           description: err instanceof Error ? err.message : 'Please try again later',
         });
@@ -62,6 +76,7 @@ export default function OrganizationsClient() {
     fetchOrganizations();
   }, []);
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -71,30 +86,36 @@ export default function OrganizationsClient() {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
-            <p className="text-muted-foreground">
-              View and manage your organization memberships
-            </p>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
         </div>
         
         <Separator />
         
         <Card>
           <CardHeader>
-            <CardTitle className="text-red-500">Error</CardTitle>
-            <CardDescription>Failed to load organizations</CardDescription>
+            <CardTitle className="text-red-500">Error Loading Organizations</CardTitle>
+            <CardDescription>
+              There was a problem loading your organizations
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p>{error}</p>
+            <p className="mb-4">{error}</p>
           </CardContent>
-          <CardFooter>
-            <Button onClick={() => router.refresh()}>Try Again</Button>
+          <CardFooter className="flex justify-between">
+            <Button 
+              variant="outline"
+              onClick={() => router.push('/dashboard')}
+            >
+              Return to Dashboard
+            </Button>
+            <Button onClick={() => router.refresh()}>
+              Try Again
+            </Button>
           </CardFooter>
         </Card>
       </div>
@@ -104,12 +125,7 @@ export default function OrganizationsClient() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
-          <p className="text-muted-foreground">
-            View and manage your organization memberships
-          </p>
-        </div>
+        <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
         <Button onClick={() => router.push('/organizations/new')}>
           <PlusCircle className="mr-2 h-4 w-4" />
           New Organization
@@ -118,47 +134,45 @@ export default function OrganizationsClient() {
       
       <Separator />
       
-      {userOrganizations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <h2 className="text-xl font-semibold mb-2">No Organizations Yet</h2>
-          <p className="text-muted-foreground mb-6 max-w-md">
-            You don&apos;t belong to any organizations yet. Create your first organization to get started.
-          </p>
-          <Button onClick={() => router.push('/organizations/new')}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Organization
-          </Button>
-        </div>
+      {organizations.length === 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>No Organizations</CardTitle>
+            <CardDescription>
+              You don&apos;t have any organizations yet
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">Create your first organization to get started</p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => router.push('/organizations/new')}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Organization
+            </Button>
+          </CardFooter>
+        </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {userOrganizations.map((membership) => (
-            <Card key={membership.id} className="overflow-hidden">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl">{membership.organization.name}</CardTitle>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {organizations.map((org) => (
+            <Card key={org.id} className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-xl">{org.organization.name}</CardTitle>
+                  <Badge variant="outline">{org.role.name}</Badge>
+                </div>
                 <CardDescription>
-                  <Badge variant="outline" className="mt-1">
-                    {membership.role.name}
-                  </Badge>
+                  {org.organization.domain || 'No domain'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pb-2">
-                <p className="text-sm text-muted-foreground">
-                  slug: {membership.organization.slug}
-                </p>
-              </CardContent>
-              <CardFooter className="flex justify-between pt-2">
+              <CardFooter className="pt-3">
                 <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => router.push(`/organizations/${membership.organization.slug}/settings`)}
+                  variant="default"
+                  className="w-full"
+                  onClick={() => router.push(`/organizations/${org.organization.slug}`)}
                 >
                   <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Button>
-                <Button 
-                  onClick={() => router.push(`/organizations/${membership.organization.slug}`)}
-                >
-                  View Dashboard
+                  Manage
                 </Button>
               </CardFooter>
             </Card>

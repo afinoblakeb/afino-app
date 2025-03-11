@@ -29,31 +29,32 @@ export async function GET() {
       }
     );
     
-    const { data: { session } } = await supabase.auth.getSession();
+    // Use getUser() instead of getSession() to avoid warning
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session?.user) {
+    if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     // Get the user profile from the database
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const userData = await prisma.user.findUnique({
+      where: { id: user.id },
     });
     
-    if (!user) {
+    if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
     // Return the user profile data
     return NextResponse.json({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      name: user.name,
-      avatarUrl: user.avatarUrl,
-      jobTitle: user.jobTitle,
-      bio: user.bio,
+      id: userData.id,
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      name: userData.name,
+      avatarUrl: userData.avatarUrl,
+      jobTitle: userData.jobTitle,
+      bio: userData.bio,
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
@@ -81,9 +82,10 @@ export async function PUT(request: Request) {
       }
     );
     
-    const { data: { session } } = await supabase.auth.getSession();
+    // Use getUser() instead of getSession() to avoid warning
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session?.user) {
+    if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
@@ -106,7 +108,7 @@ export async function PUT(request: Request) {
     
     // Update the user
     const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: user.id },
       data: {
         firstName,
         lastName,

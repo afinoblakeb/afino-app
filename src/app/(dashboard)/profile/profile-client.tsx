@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,14 +52,26 @@ export default function ProfileClient() {
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [organizations, setOrganizations] = useState<UserOrganization[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(false);
 
   useEffect(() => {
+    // Prevent repeated fetching that can cause refreshes
+    if (isMounted.current) return;
+    isMounted.current = true;
+
     async function fetchProfileData() {
       try {
         setIsLoading(true);
         
         // Fetch user profile data
-        const profileResponse = await fetch('/api/user/profile');
+        const profileResponse = await fetch('/api/user/profile', {
+          // Ensure we're not using any cached data
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
         if (!profileResponse.ok) {
           const errorData = await profileResponse.json();
           throw new Error(errorData.error || 'Failed to fetch profile data');
@@ -68,7 +80,14 @@ export default function ProfileClient() {
         setProfileData(profileData);
         
         // Fetch user organizations
-        const organizationsResponse = await fetch('/api/users/me/organizations');
+        const organizationsResponse = await fetch('/api/users/me/organizations', {
+          // Ensure we're not using any cached data  
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
         if (!organizationsResponse.ok) {
           const errorData = await organizationsResponse.json();
           throw new Error(errorData.error || 'Failed to fetch organizations');

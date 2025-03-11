@@ -20,15 +20,16 @@ export async function GET() {
       }
     );
     
-    const { data: { session } } = await supabase.auth.getSession();
+    // Use getUser() instead of getSession() to avoid warning
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session?.user) {
+    if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     // Get organizations the user belongs to
     const userOrganizations = await prisma.userOrganization.findMany({
-      where: { userId: session.user.id },
+      where: { userId: user.id },
       include: {
         organization: {
           select: {
