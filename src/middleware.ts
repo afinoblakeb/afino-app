@@ -2,6 +2,14 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  
+  // Skip auth check for callback route - this is critical
+  if (path.startsWith('/auth/callback')) {
+    console.log('[Middleware] Skipping auth check for callback route');
+    return NextResponse.next();
+  }
+  
   const response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -33,16 +41,9 @@ export async function middleware(request: NextRequest) {
   if (sessionError) {
     console.error('Session error in middleware:', sessionError)
   }
-
-  const path = request.nextUrl.pathname
   
   // Debug information
   console.log(`[Middleware] Path: ${path}, Session exists: ${!!session}`)
-  
-  // Skip auth check for callback route
-  if (path.startsWith('/auth/callback')) {
-    return response
-  }
   
   // If the user is signed in and the current path is /auth/signin or /auth/signup, redirect the user to /dashboard
   if (session && (path === '/auth/signin' || path === '/auth/signup')) {

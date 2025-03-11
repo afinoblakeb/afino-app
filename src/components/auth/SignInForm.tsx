@@ -42,16 +42,11 @@ export default function SignInForm() {
     try {
       const supabase = createBrowserSupabaseClient();
       
-      // Sign in with Google using PKCE flow
+      // Sign in with Google using PKCE flow - simplified approach
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-          skipBrowserRedirect: false,
         },
       });
 
