@@ -42,10 +42,6 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
 
-  // Check if current page is profile or organizations
-  const isFullWidthPage = pathname?.includes('/profile') || 
-                          pathname?.includes('/organizations');
-
   // Fetch user organizations from API
   useEffect(() => {
     async function fetchUserOrganizations() {
@@ -131,7 +127,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-hidden">
         {currentOrganization && (
           <AppSidebar
             organizations={userOrganizations}
@@ -140,11 +136,11 @@ export function MainLayout({ children }: MainLayoutProps) {
             onOrganizationChange={handleOrganizationChange}
           />
         )}
-        <main className="flex-1 overflow-y-auto w-full">
+        <main className="flex-1 overflow-y-auto relative">
           <div className="p-4">
             <SidebarTrigger className="mb-6" />
           </div>
-          <div className={isFullWidthPage ? "px-4 md:px-6 w-full max-w-full" : "w-full px-4 md:px-6"}>
+          <div className="px-4 md:px-6">
             {children}
           </div>
         </main>
