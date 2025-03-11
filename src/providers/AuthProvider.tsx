@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 type AuthContextType = {
   user: User | null;
@@ -18,11 +19,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [lastChecked, setLastChecked] = useState(0);
   const router = useRouter();
-
-  // COMPLETELY DISABLED: Visibility change event handler
-  // We're not using any visibility change handlers to prevent reloads
+  const queryClient = useQueryClient();
+  // Track if this is an initial auth check or a subsequent check
+  const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
 
   // Check for hash fragment in URL (from OAuth redirect)
   useEffect(() => {
@@ -61,35 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    console.log('[AuthProvider] Initial session check, last checked:', new Date(lastChecked).toISOString());
-    
-    // EMERGENCY FIX: Implement a throttle using localStorage to prevent repeated session checks
-    const lastSessionCheck = localStorage.getItem('lastSessionCheck');
-    const now = Date.now();
-    
-    // If we've checked within the last 10 seconds, don't check again
-    if (lastSessionCheck && now - parseInt(lastSessionCheck) < 10000) {
-      console.log('[AuthProvider] Skipping session check - too recent (within 10s)');
-      
-      // Try to use cached session if available
-      const cachedUser = localStorage.getItem('cachedUser');
-      const cachedSession = localStorage.getItem('cachedSession');
-      
-      if (cachedUser && cachedSession) {
-        try {
-          const parsedUser = JSON.parse(cachedUser);
-          const parsedSession = JSON.parse(cachedSession);
-          
-          console.log('[AuthProvider] Using cached session data');
-          setUser(parsedUser);
-          setSession(parsedSession);
-          setIsLoading(false);
-          return;
-        } catch (e) {
-          console.error('[AuthProvider] Error parsing cached session:', e);
-        }
-      }
-    }
+    console.log('[AuthProvider] Initial session check');
     
     const getSession = async () => {
       setIsLoading(true);
@@ -100,14 +72,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setSession(data.session);
         setUser(data.session?.user || null);
-        setLastChecked(Date.now());
-        
-        // Cache the session data
-        if (data.session) {
-          localStorage.setItem('cachedUser', JSON.stringify(data.session.user));
-          localStorage.setItem('cachedSession', JSON.stringify(data.session));
-        }
-        localStorage.setItem('lastSessionCheck', now.toString());
         
         // If we have a session but are on an auth page, redirect to dashboard
         // ONLY redirect if we're on an auth page, not for general session checks
@@ -119,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('[AuthProvider] Error checking session:', error);
       } finally {
         setIsLoading(false);
+        setInitialAuthCheckComplete(true);
       }
     };
 
@@ -129,35 +94,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         console.log('[AuthProvider] Auth state changed:', event);
         
-        // EMERGENCY FIX: Only process certain events to prevent loops
-        if (event !== 'TOKEN_REFRESHED' && event !== 'USER_UPDATED') {
+        // Only process relevant events
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
           setSession(session);
           setUser(session?.user || null);
           setIsLoading(false);
-          setLastChecked(Date.now());
           
-          // Cache the session data
-          if (session) {
-            localStorage.setItem('cachedUser', JSON.stringify(session.user));
-            localStorage.setItem('cachedSession', JSON.stringify(session));
-          }
-          localStorage.setItem('lastSessionCheck', now.toString());
+          // Invalidate all queries to refetch data with new auth state
+          queryClient.invalidateQueries();
           
-          // Handle redirect after sign in - ONLY for actual sign in/out events
-          // This prevents unwanted redirects when the token is refreshed or updated
-          if (event === 'SIGNED_IN' && session) {
+          // Only handle redirects on explicit sign-in/sign-out actions, not token refreshes
+          if (event === 'SIGNED_IN' && session && !initialAuthCheckComplete) {
             console.log('[AuthProvider] User signed in, redirecting to dashboard');
             router.push('/dashboard');
           } else if (event === 'SIGNED_OUT') {
             console.log('[AuthProvider] User signed out, redirecting to signin');
             router.push('/auth/signin');
-          } else {
-            console.log('[AuthProvider] Other auth event, not redirecting:', event);
           }
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Just update the session without triggering refetches or redirects
+          console.log('[AuthProvider] Token refreshed, updating session without redirect');
+          setSession(session);
+          setUser(session?.user || null);
         } else {
-          console.log('[AuthProvider] Ignoring', event, 'event to prevent loops');
+          console.log('[AuthProvider] Ignoring other auth event:', event);
         }
-        // Don't redirect for other events like 'TOKEN_REFRESHED' or 'USER_UPDATED'
       }
     );
 
@@ -165,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthProvider] Cleaning up auth state change listener');
       subscription.unsubscribe();
     };
-  }, [router, lastChecked]);
+  }, [router, queryClient, initialAuthCheckComplete]);
 
   const signOut = async () => {
     console.log('[AuthProvider] Sign out initiated');
@@ -175,12 +136,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
       console.log('[AuthProvider] Supabase sign out successful');
       
+      // Clear React Query cache on logout
+      queryClient.clear();
+      
       setSession(null);
       setUser(null);
       
       console.log('[AuthProvider] Redirecting to signin page');
-      // Force a reload to clear any cached state
-      window.location.href = '/auth/signin';
+      router.push('/auth/signin');
     } catch (error) {
       console.error('[AuthProvider] Error signing out:', error);
     } finally {

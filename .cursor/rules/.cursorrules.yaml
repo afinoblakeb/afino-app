@@ -1,0 +1,10 @@
+# Cursor rules configuration
+pre-commit:
+  - command: npm run build
+    description: Ensure build succeeds before committing
+    on-failure: block
+    
+pre-push:
+  - command: npm run build
+    description: Ensure build succeeds before pushing to GitHub
+    on-failure: block 

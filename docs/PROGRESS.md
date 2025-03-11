@@ -78,8 +78,22 @@ This document tracks the progress of the Afino platform development.
     - [x] Document emergency fix for infinite API calls and page reloads
     - [x] Implement temporary localStorage-based throttling solution
     - [x] Create implementation plan for permanent solution using React Query
-    - [ ] Implement React Query-based data fetching architecture
-    - [ ] Refactor components to use React Query
+    - [x] Set up React Query infrastructure
+      - [x] Install React Query dependencies
+      - [x] Create QueryProvider component
+      - [x] Set up testing utilities for React Query
+    - [x] Create custom hooks for data fetching
+      - [x] Implement useUserProfile hook
+      - [x] Implement useOrganizations hook
+    - [x] Create tests for React Query implementation
+      - [x] Test visibility change behavior
+      - [x] Test integration with AuthProvider
+    - [x] Refactor components to use React Query
+      - [x] Update app entry point to include QueryProvider
+      - [x] Refactor MainLayout to use React Query
+      - [x] Refactor AuthProvider to use React Query
+      - [x] Refactor profile-client to use React Query
+      - [x] Refactor organizations-client to use React Query
     - [ ] Add proper HTTP caching to API routes
 
 ## Core Scaffolding Features
@@ -157,7 +171,14 @@ This document tracks the progress of the Afino platform development.
   - [x] Document the issue and fix in EMERGENCY_FIX_INFINITE_RELOADS.md
   - [x] Create DEVELOPMENT.md with guidance on maintaining the fix
   - [x] Create implementation prompt for permanent solution
-  - [ ] Implement React Query for data fetching and caching
+  - [x] Implement React Query for data fetching and caching
+    - [x] Set up React Query infrastructure
+    - [x] Create custom hooks for data fetching
+    - [x] Create tests for React Query implementation
+    - [x] Refactor MainLayout to use React Query
+    - [x] Refactor AuthProvider to use React Query
+    - [x] Refactor profile-client to use React Query
+    - [x] Refactor organizations-client to use React Query
   - [ ] Add proper HTTP caching to API routes
 
 ## Database Setup
@@ -210,10 +231,12 @@ This document tracks the progress of the Afino platform development.
   - [ ] Organization components
   - [ ] User components
   - [ ] UI components
+  - [x] React Query hooks and providers
 - [ ] Integration tests
   - [ ] Authentication flows
   - [ ] Organization management flows
   - [ ] User management flows
+  - [x] React Query visibility change behavior
 - [ ] End-to-end tests
   - [ ] Sign-up and sign-in
   - [ ] Organization creation and management
@@ -232,8 +255,8 @@ This document tracks the progress of the Afino platform development.
 
 ## Last Updated
 
-This progress file was last updated on: March 7, 2025
+This progress file was last updated on: March 10, 2025
 
 ## Build Status
 
-Last successful build: Vercel deployment on March 7, 2025 
+Last successful build: Vercel deployment on March 10, 2025 

@@ -52,11 +52,17 @@ type Organization = {
 
 interface UserOrganizationResponse {
   organizations: Array<{
+    id: string;
+    organizationId: string;
     organization: {
       id: string;
       name: string;
       slug: string;
       domain?: string | null;
+    };
+    role: {
+      id: string;
+      name: string;
     };
   }>;
 }
@@ -103,14 +109,17 @@ export function AppSidebar({
     'Secondary Section': false,
   });
 
-  // Fetch real organizations from the API
+  // Fetch real organizations from the API - but only once during initial load
   useEffect(() => {
     async function fetchOrganizations() {
       try {
         const response = await fetch('/api/users/me/organizations', {
+          // Disable all caching to avoid refetching
           cache: 'no-store',
           headers: {
-            'Cache-Control': 'no-cache'
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
         });
         
@@ -118,9 +127,9 @@ export function AppSidebar({
           const data = await response.json() as UserOrganizationResponse;
           if (data.organizations && data.organizations.length > 0) {
             const mappedOrgs = data.organizations.map((org) => ({
-              id: org.organization.id,
-              name: org.organization.name,
-              slug: org.organization.slug,
+              id: org.organizationId || org.id || '',
+              name: org.organization?.name || 'Unnamed Organization',
+              slug: org.organization?.slug || '',
               logoUrl: '', // Add logoUrl if available
             }));
             setUserOrganizations(mappedOrgs);
@@ -131,8 +140,12 @@ export function AppSidebar({
       }
     }
     
-    fetchOrganizations();
-  }, []);
+    // Only fetch if we have no organization data yet
+    if (userOrganizations.length === 0 || userOrganizations.length !== organizations.length) {
+      fetchOrganizations();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array means this only runs once
 
   const toggleExpanded = (key: string) => {
     setExpanded((prev) => ({
@@ -142,8 +155,18 @@ export function AppSidebar({
   };
 
   const handleOrganizationSelect = (org: Organization) => {
-    onOrganizationChange(org);
-    router.push(`/organizations/${org.slug}`);
+    // Make sure we're passing string values
+    onOrganizationChange({
+      id: org.id || '',
+      name: typeof org.name === 'string' ? org.name : 'Organization',
+      slug: typeof org.slug === 'string' ? org.slug : '',
+      logoUrl: org.logoUrl || ''
+    });
+    
+    // Navigate to the organization page if slug is available
+    if (org.slug) {
+      router.push(`/organizations/${org.slug}`);
+    }
   };
 
   return (
@@ -159,7 +182,7 @@ export function AppSidebar({
                     <AvatarImage src={currentOrganization.logoUrl} alt={currentOrganization.name} />
                   ) : (
                     <AvatarFallback>
-                      {currentOrganization.name.substring(0, 2).toUpperCase()}
+                      {currentOrganization.name ? currentOrganization.name.substring(0, 2).toUpperCase() : 'OR'}
                     </AvatarFallback>
                   )}
                 </Avatar>
@@ -184,7 +207,7 @@ export function AppSidebar({
                       <AvatarImage src={org.logoUrl} alt={org.name} />
                     ) : (
                       <AvatarFallback className="text-xs">
-                        {org.name.substring(0, 2).toUpperCase()}
+                        {org.name ? org.name.substring(0, 2).toUpperCase() : 'OR'}
                       </AvatarFallback>
                     )}
                   </Avatar>
@@ -283,14 +306,6 @@ export function AppSidebar({
 
         <SidebarFooter>
           <Separator />
-          {/* <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => router.push('/profile')}>
-                <User className="h-4 w-4 mr-2" />
-                <span className="group-data-[collapsible=icon]:hidden">My Profile</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu> */}
           <div className="p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

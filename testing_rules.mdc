@@ -1,1 +1,352 @@
- 
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ # Testing Rules
+
+This document outlines the testing rules and best practices for the Afino application. All developers must follow these rules when writing and maintaining tests.
+
+## General Testing Principles
+
+1. **Test-Driven Development**: Always write tests before implementing a feature (Red-Green-Refactor).
+2. **Test Coverage**: Aim for 80% code coverage for unit tests, with critical paths having higher coverage.
+3. **Test Quality**: Focus on testing behavior rather than implementation details.
+4. **Test Independence**: Tests should not depend on each other or external state.
+5. **Test Readability**: Write clear, readable tests that serve as documentation.
+
+## Jest Configuration
+
+Our project uses Jest as the primary testing framework with the following configuration:
+
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
+  },
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      tsconfig: 'tsconfig.test.json',
+    }],
+  },
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/mocks/**',
+    '!src/types/**',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}'
+  ],
+};
+```
+
+```javascript
+// jest.setup.js
+import '@testing-library/jest-dom';
+// Add any global test setup here
+```
+
+## Test File Organization
+
+1. **Location**: Place test files next to the files they test with a `.test.ts(x)` or `.spec.ts(x)` suffix.
+2. **Structure**: Group tests into logical blocks using `describe` and use clear `it`/`test` statements.
+
+```
+src/
+  components/
+    Button/
+      Button.tsx
+      Button.test.tsx
+  hooks/
+    useUserProfile/
+      useUserProfile.ts
+      useUserProfile.test.ts
+```
+
+## Unit Testing Rules
+
+1. **Component Tests**:
+   - Test rendering without crashing
+   - Test props and their effects
+   - Test user interactions (clicks, keypresses)
+   - Test accessibility (where applicable)
+   - Don't test implementation details
+
+2. **Hook Tests**:
+   - Use `renderHook` from `@testing-library/react-hooks`
+   - Test initial state
+   - Test state changes
+   - Test side effects
+
+3. **Utility Function Tests**:
+   - Test all edge cases
+   - Test error handling
+   - Use parameterized tests for multiple inputs
+
+4. **API Client Tests**:
+   - Mock external API calls using MSW or Jest mocks
+   - Test success and error cases
+   - Test request parameters
+   - Test response handling
+
+## Example Tests
+
+### Component Test
+
+```tsx
+// Button.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import Button from './Button';
+
+describe('Button', () => {
+  it('renders correctly with default props', () => {
+    render(<Button>Click me</Button>);
+    const button = screen.getByRole('button', { name: /click me/i });
+    expect(button).toBeInTheDocument();
+    expect(button).not.toBeDisabled();
+  });
+
+  it('calls onClick handler when clicked', () => {
+    const handleClick = jest.fn();
+    render(<Button onClick={handleClick}>Click me</Button>);
+    fireEvent.click(screen.getByRole('button', { name: /click me/i }));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders as disabled when disabled prop is true', () => {
+    render(<Button disabled>Click me</Button>);
+    expect(screen.getByRole('button', { name: /click me/i })).toBeDisabled();
+  });
+});
+```
+
+### Hook Test
+
+```tsx
+// useCounter.test.tsx
+import { renderHook, act } from '@testing-library/react-hooks';
+import useCounter from './useCounter';
+
+describe('useCounter', () => {
+  it('initializes with default value', () => {
+    const { result } = renderHook(() => useCounter());
+    expect(result.current.count).toBe(0);
+  });
+
+  it('increments the counter', () => {
+    const { result } = renderHook(() => useCounter());
+    act(() => {
+      result.current.increment();
+    });
+    expect(result.current.count).toBe(1);
+  });
+
+  it('decrements the counter', () => {
+    const { result } = renderHook(() => useCounter(10));
+    act(() => {
+      result.current.decrement();
+    });
+    expect(result.current.count).toBe(9);
+  });
+});
+```
+
+## Testing React Query
+
+For the React Query implementation to fix the infinite API calls issue:
+
+1. **Setup**:
+   - Use `QueryClientProvider` and `createQueryClient` in tests
+   - Reset the query cache between tests
+
+2. **Mocking**:
+   - Use MSW to mock API responses
+   - Test loading, success, and error states
+
+3. **Test Cases**:
+   - Test that data is cached correctly
+   - Test that stale data is revalidated
+   - Test that refetchOnWindowFocus works correctly with debouncing
+   - Test that query keys are used correctly
+   - Test that error handling works as expected
+
+```tsx
+// useUserProfile.test.tsx
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+import { useUserProfile } from './useUserProfile';
+
+const server = setupServer(
+  rest.get('/api/users/me', (req, res, ctx) => {
+    return res(
+      ctx.json({
+        id: '123',
+        name: 'Test User',
+        email: 'test@example.com',
+      })
+    );
+  })
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+  return ({ children }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+};
+
+describe('useUserProfile', () => {
+  it('fetches and returns user profile data', async () => {
+    const { result } = renderHook(() => useUserProfile(), {
+      wrapper: createWrapper(),
+    });
+
+    // Should start with loading state
+    expect(result.current.isLoading).toBe(true);
+
+    // Wait for data to be fetched
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Should have data
+    expect(result.current.data).toEqual({
+      id: '123',
+      name: 'Test User',
+      email: 'test@example.com',
+    });
+  });
+
+  it('handles error states', async () => {
+    server.use(
+      rest.get('/api/users/me', (req, res, ctx) => {
+        return res(ctx.status(500), ctx.json({ message: 'Server error' }));
+      })
+    );
+
+    const { result } = renderHook(() => useUserProfile(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeTruthy();
+  });
+});
+```
+
+## Integration Testing Rules
+
+1. **Setup**:
+   - Use Jest's test environment
+   - Mock external services with MSW
+   - Create test fixtures for common data
+
+2. **API Integration Tests**:
+   - Test API endpoints
+   - Validate request/response formats
+   - Test error handling
+   - Test authentication and authorization
+
+3. **Component Integration Tests**:
+   - Test interactions between components
+   - Test data flow
+   - Test context providers
+
+## End-to-End Testing
+
+1. **Critical Flows**:
+   - Authentication
+   - Organization management
+   - User profile management
+   - Invitations
+   - Navigation
+
+2. **Environment**:
+   - Use a dedicated test environment
+   - Reset the database between test runs
+   - Use test users and data
+
+## Test Anti-Patterns to Avoid
+
+1. **Testing Implementation Details**:
+   - Don't access component state directly
+   - Don't test private methods
+   - Don't rely on component internals
+
+2. **Brittle Tests**:
+   - Don't use unnecessary assertions
+   - Don't couple tests to specific implementations
+   - Don't test third-party libraries
+
+3. **Overlapping Tests**:
+   - Don't test the same thing multiple times
+   - Don't duplicate test logic
+
+4. **Slow Tests**:
+   - Don't perform unnecessary setup
+   - Don't use real APIs in unit tests
+   - Use mocks for external dependencies
+
+## Continuous Integration
+
+1. All tests must pass before merging to main
+2. Coverage reports must meet minimum thresholds
+3. Test performance is monitored
+
+## Commit Guidelines
+
+When committing test-related changes:
+
+1. **New Features**: Include tests that verify the feature works
+2. **Bug Fixes**: Include regression tests that verify the bug is fixed
+3. **Refactoring**: Ensure existing tests continue to pass
+
+## Specific Rules for the Infinite API Calls Fix
+
+When implementing the React Query solution to fix infinite API calls:
+
+1. Write tests that verify:
+   - API calls are deduplicated
+   - Stale-while-revalidate pattern works correctly
+   - Tab visibility changes don't trigger excessive API calls
+   - Auth state changes don't cause cascading updates
+
+2. Test refetchOnWindowFocus behavior:
+   - Simulate tab focus/blur events
+   - Verify debouncing works correctly
+   - Ensure only one API call is made on focus
+
+3. Test caching behavior:
+   - Verify data is cached correctly
+   - Test cache invalidation
+   - Test stale time and cache time
+
+4. Test error handling:
+   - Simulate network failures
+   - Test retry logic
+   - Verify error states are handled correctly

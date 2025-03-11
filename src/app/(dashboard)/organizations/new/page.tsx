@@ -1,28 +1,14 @@
-import { redirect } from 'next/navigation';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import NewOrganizationForm from './new-organization-form';
 
-export default async function NewOrganizationPage() {
-  const cookieStore = await cookies();
-  
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
+// Add dynamic rendering to avoid static prerendering issues
+export const dynamic = 'force-dynamic';
+
+// Create a simpler server component that doesn't cause serialization issues
+export default function NewOrganizationPage() {
+  return (
+    <div className="container max-w-screen-lg mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Create New Organization</h1>
+      <NewOrganizationForm />
+    </div>
   );
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    redirect('/auth/signin');
-  }
-  
-  return <NewOrganizationForm />;
 } 

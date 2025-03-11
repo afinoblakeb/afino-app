@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlusCircle, Settings, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,106 +7,36 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useOrganizations } from '@/hooks/useOrganizations';
 
-// Define types for the API response
+// Define the Organization interface to match the hook's return type
 interface Organization {
   id: string;
   name: string;
   slug: string;
+  role?: string;
   domain?: string | null;
-}
-
-interface Role {
-  id: string;
-  name: string;
-}
-
-interface UserOrganization {
-  id: string;
-  organizationId: string;
-  organization: Organization;
-  role: Role;
 }
 
 export default function OrganizationsClient() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [organizations, setOrganizations] = useState<UserOrganization[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const isMounted = useRef(false);
-
-  useEffect(() => {
-    console.log('[OrganizationsClient] Initial data fetch useEffect triggered');
-    
-    // EMERGENCY FIX: Implement a throttle using localStorage to prevent repeated API calls
-    const lastFetchTime = localStorage.getItem('lastOrganizationsFetch');
-    const now = Date.now();
-    
-    // If we've fetched within the last 10 seconds, don't fetch again
-    if (lastFetchTime && now - parseInt(lastFetchTime) < 10000) {
-      console.log('[OrganizationsClient] Skipping fetch - too recent (within 10s)');
-      
-      // Try to use cached data if available
-      const cachedOrgs = localStorage.getItem('cachedOrganizations');
-      if (cachedOrgs) {
-        try {
-          const parsedOrgs = JSON.parse(cachedOrgs);
-          console.log('[OrganizationsClient] Using cached organizations data:', parsedOrgs.length);
-          setOrganizations(parsedOrgs);
-          setIsLoading(false);
-          return;
-        } catch (e) {
-          console.error('[OrganizationsClient] Error parsing cached organizations:', e);
-        }
-      }
-      
-      return;
-    }
-    
-    // Prevent repeated fetching that can cause refreshes
-    if (isMounted.current) {
-      console.log('[OrganizationsClient] Already mounted, skipping fetch');
-      return;
-    }
-    isMounted.current = true;
-    
-    async function fetchOrganizations() {
-      console.log('[OrganizationsClient] Fetching organizations...');
-      try {
-        setIsLoading(true);
-        
-        const response = await fetch('/api/users/me/organizations', {
-          // Use standard browser caching instead of no-store
-          cache: 'default',
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[OrganizationsClient] Organizations fetched successfully:', data.organizations?.length || 0);
-          setOrganizations(data.organizations);
-          
-          // Cache the organizations data
-          localStorage.setItem('cachedOrganizations', JSON.stringify(data.organizations));
-          localStorage.setItem('lastOrganizationsFetch', now.toString());
-        } else {
-          console.error('[OrganizationsClient] Failed to fetch organizations:', response.status);
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch organizations');
-        }
-      } catch (err) {
-        console.error('[OrganizationsClient] Error fetching organizations:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching organizations');
-        toast.error('Error loading organizations', {
-          description: err instanceof Error ? err.message : 'Please try again later',
-        });
-      } finally {
-        setIsLoading(false);
-        console.log('[OrganizationsClient] Fetch completed');
-      }
-    }
-    
-    fetchOrganizations();
-  }, []);
+  
+  // Fetch user profile data using React Query
+  const { 
+    data: userProfile, 
+    isLoading: isProfileLoading 
+  } = useUserProfile();
+  
+  // Fetch organizations data using React Query
+  const { 
+    data: organizations, 
+    isLoading: isOrgsLoading, 
+    error,
+    refetch
+  } = useOrganizations(userProfile?.id);
+  
+  const isLoading = isProfileLoading || isOrgsLoading;
 
   // Loading state
   if (isLoading) {
@@ -137,7 +66,7 @@ export default function OrganizationsClient() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="mb-4">{error}</p>
+            <p className="mb-4">{error instanceof Error ? error.message : 'Failed to load organizations'}</p>
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button 
@@ -146,7 +75,10 @@ export default function OrganizationsClient() {
             >
               Return to Dashboard
             </Button>
-            <Button onClick={() => router.refresh()}>
+            <Button onClick={() => {
+              refetch();
+              toast.info('Refreshing your organizations...');
+            }}>
               Try Again
             </Button>
           </CardFooter>
@@ -167,7 +99,7 @@ export default function OrganizationsClient() {
       
       <Separator />
       
-      {organizations.length === 0 ? (
+      {!organizations || organizations.length === 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>No Organizations</CardTitle>
@@ -187,22 +119,22 @@ export default function OrganizationsClient() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {organizations.map((org) => (
+          {organizations.map((org: Organization) => (
             <Card key={org.id} className="overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
-                  <CardTitle className="text-xl">{org.organization.name}</CardTitle>
-                  <Badge variant="outline">{org.role.name}</Badge>
+                  <CardTitle className="text-xl">{org.name}</CardTitle>
+                  <Badge variant="outline">{org.role || 'Member'}</Badge>
                 </div>
                 <CardDescription>
-                  {org.organization.domain || 'No domain'}
+                  {org.domain || 'No domain'}
                 </CardDescription>
               </CardHeader>
               <CardFooter className="pt-3">
                 <Button 
                   variant="default"
                   className="w-full"
-                  onClick={() => router.push(`/organizations/${org.organization.slug}`)}
+                  onClick={() => router.push(`/organizations/${org.slug}`)}
                 >
                   <Settings className="mr-2 h-4 w-4" />
                   Manage
