@@ -61,8 +61,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // If the user is not signed in and the current path is /dashboard, redirect the user to /auth/signin
-  if (!session && path === '/dashboard') {
+  // If the user is not signed in and the current path is /dashboard or /profile, redirect the user to /auth/signin
+  if (!session && (path === '/dashboard' || path === '/profile' || path.startsWith('/organizations'))) {
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 

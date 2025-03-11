@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
   LayoutDashboard,
@@ -82,6 +83,7 @@ export function AppSidebar({
   user,
 }: SidebarProps) {
   const { signOut } = useAuth();
+  const router = useRouter();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     'Main Section': true,
     'Secondary Section': false,
@@ -131,9 +133,25 @@ export function AppSidebar({
           <SidebarMenu>
             {/* Main Dashboard Item */}
             <SidebarMenuItem>
-              <SidebarMenuButton>
+              <SidebarMenuButton onClick={() => router.push('/dashboard')}>
                 <LayoutDashboard className="h-4 w-4 mr-2" />
                 <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {/* Organizations */}
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => router.push('/organizations')}>
+                <Briefcase className="h-4 w-4 mr-2" />
+                <span className="group-data-[collapsible=icon]:hidden">Organizations</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {/* User Profile */}
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => router.push('/profile')}>
+                <User className="h-4 w-4 mr-2" />
+                <span className="group-data-[collapsible=icon]:hidden">Profile</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
