@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(data.session.user);
           }
           setLastChecked(Date.now());
+          // Do NOT redirect to dashboard here - this would cause unwanted redirects
         } catch (error) {
           console.error('Error checking session on visibility change:', error);
         }
@@ -89,7 +90,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLastChecked(Date.now());
         
         // If we have a session but are on an auth page, redirect to dashboard
-        if (data.session && window.location.pathname.startsWith('/auth')) {
+        // ONLY redirect if we're on an auth page, not for general session checks
+        if (data.session && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
           router.push('/dashboard');
         }
       } catch {
@@ -108,12 +110,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
         setLastChecked(Date.now());
         
-        // Handle redirect after sign in
+        // Handle redirect after sign in - ONLY for actual sign in/out events
+        // This prevents unwanted redirects when the token is refreshed or updated
         if (event === 'SIGNED_IN' && session) {
           router.push('/dashboard');
         } else if (event === 'SIGNED_OUT') {
           router.push('/auth/signin');
         }
+        // Don't redirect for other events like 'TOKEN_REFRESHED' or 'USER_UPDATED'
       }
     );
 

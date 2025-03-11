@@ -59,11 +59,7 @@ export default function ProfileClient() {
   useEffect(() => {
     // Only fetch data on initial mount, not on visibility changes
     const handleVisibilityChange = () => {
-      // If the page becomes visible and it's been less than 5 minutes since last fetch, don't refetch
-      if (document.visibilityState === 'visible' && 
-          Date.now() - fetchTimeRef.current < 5 * 60 * 1000) {
-        return;
-      }
+      // Don't do anything on visibility change - this prevents unnecessary reloads
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);

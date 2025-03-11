@@ -53,7 +53,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       try {
         setIsLoadingOrgs(true);
         const response = await fetch('/api/users/me/organizations', {
-          next: { revalidate: 60 } // Revalidate every 60 seconds instead of on every focus
+          cache: 'default' // Use browser's standard cache control
         });
         
         if (response.ok) {
@@ -89,7 +89,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
     
     fetchUserOrganizations();
-  }, [user, userOrganizations, isLoadingOrgs]);
+  }, [user]); // Remove userOrganizations and isLoadingOrgs from dependencies
 
   const userProfile = user ? {
     id: user.id,
