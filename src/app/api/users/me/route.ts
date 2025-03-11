@@ -1,24 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { createApiSupabaseClient } from '@/utils/supabase/api-client';
 
 // Get the current user's profile
 export async function GET() {
   try {
-    // Get the user session
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    // Get the user session with the new client approach
+    const supabase = createApiSupabaseClient();
     
     // Use getUser() instead of getSession() to avoid warning
     const { data: { user }, error: userError } = await supabase.auth.getUser();

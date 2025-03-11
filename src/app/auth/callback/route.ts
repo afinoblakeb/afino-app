@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createUserProfile } from '@/services/userService'
@@ -12,34 +12,22 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get('next') || '/dashboard'
 
   if (code) {
-    // Get the cookies from the request - must be awaited
-    const cookieStore = await cookies()
+    // Get the cookies from the request
+    const cookieStore = cookies()
     
-    // Create a Supabase client with the cookies API
-    const supabase = createServerClient(
+    // Create a Supabase client with the latest approach
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        cookies: {
-          get(name: string) {
-            // Get the cookie value from the cookie store
-            return cookieStore.get(name)?.value
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            // Set the cookie value in the cookie store
-            try {
-              cookieStore.set({ name, value, ...options })
-            } catch {
-              // This can happen in middleware where cookies are readonly
-            }
-          },
-          remove(name: string, options: CookieOptions) {
-            // Remove the cookie from the cookie store
-            try {
-              cookieStore.set({ name, value: '', ...options, maxAge: 0 })
-            } catch {
-              // This can happen in middleware where cookies are readonly
-            }
+        auth: {
+          autoRefreshToken: false,
+          persistSession: true, // We need this for the code exchange
+          detectSessionInUrl: true, // We need this for the code exchange
+        },
+        global: {
+          headers: {
+            cookie: cookieStore.toString(),
           },
         },
       }
@@ -66,7 +54,8 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${requestUrl.origin}/onboarding`)
         }
       }
-    } catch {
+    } catch (error) {
+      console.error('Auth callback error:', error)
       // If there's an error, redirect to the sign-in page
       return NextResponse.redirect(`${requestUrl.origin}/auth/signin?error=Could not authenticate user`)
     }

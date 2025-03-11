@@ -1,41 +1,44 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
-export async function createClient() {
-  // Get the cookies from the request - must be awaited
-  const cookieStore = await cookies()
+export async function createServerSupabaseClient() {
+  // We don't need to store the cookieStore since we're not using it directly
+  // The cookies are handled automatically by the fetch credentials
   
-  // Create a Supabase client with the cookies API
-  return createServerClient(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        get(name: string) {
-          // Get the cookie value from the cookie store
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          // Set the cookie value in the cookie store
-          try {
-            cookieStore.set({ name, value, ...options })
-          } catch {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+      auth: {
+        persistSession: false,
+      },
+      global: {
+        fetch: async (url, options = {}) => {
+          const response = await fetch(url, {
+            ...options,
+            credentials: 'include',
+          })
+
+          // Set cookies from response headers in the cookie jar
+          const setCookieHeader = response.headers.get('set-cookie')
+          if (setCookieHeader) {
+            // Parse the Set-Cookie header and set cookies
+            // We can't directly set cookies from server components
+            // This is just for handling the fetch response
+            // The actual cookie setting will be handled by Supabase's auth system
+            console.log('Set-Cookie header received:', setCookieHeader)
           }
-        },
-        remove(name: string, options: CookieOptions) {
-          // Remove the cookie from the cookie store
-          try {
-            cookieStore.set({ name, value: '', ...options, maxAge: 0 })
-          } catch {
-            // The `delete` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
+
+          return response
         },
       },
     }
+  )
+}
+
+export function createBrowserSupabaseClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 } 

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { createBrowserSupabaseClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -23,6 +23,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   // Track if this is an initial auth check or a subsequent check
   const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
+  
+  // Create a Supabase client instance
+  const supabase = createBrowserSupabaseClient();
 
   // Check for hash fragment in URL (from OAuth redirect)
   useEffect(() => {
@@ -126,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthProvider] Cleaning up auth state change listener');
       subscription.unsubscribe();
     };
-  }, [router, queryClient, initialAuthCheckComplete]);
+  }, [router, queryClient, initialAuthCheckComplete, supabase]);
 
   const signOut = async () => {
     console.log('[AuthProvider] Sign out initiated');
