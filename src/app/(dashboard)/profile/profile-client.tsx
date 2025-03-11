@@ -65,11 +65,7 @@ export default function ProfileClient() {
         
         // Fetch user profile data
         const profileResponse = await fetch('/api/user/profile', {
-          // Ensure we're not using any cached data
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
+          next: { revalidate: 60 } // Revalidate every 60 seconds instead of on every focus
         });
         
         if (!profileResponse.ok) {
@@ -81,11 +77,7 @@ export default function ProfileClient() {
         
         // Fetch user organizations
         const organizationsResponse = await fetch('/api/users/me/organizations', {
-          // Ensure we're not using any cached data  
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
+          next: { revalidate: 60 } // Revalidate every 60 seconds instead of on every focus
         });
         
         if (!organizationsResponse.ok) {
@@ -155,7 +147,51 @@ export default function ProfileClient() {
             >
               Return to Dashboard
             </Button>
-            <Button onClick={() => router.refresh()}>
+            <Button onClick={() => {
+              setError(null);
+              setIsLoading(true);
+              isMounted.current = false;
+              
+              // Re-fetch data without a full page refresh
+              async function refetchData() {
+                try {
+                  // Fetch user profile data
+                  const profileResponse = await fetch('/api/user/profile', {
+                    next: { revalidate: 0 } // Force revalidation
+                  });
+                  
+                  if (!profileResponse.ok) {
+                    const errorData = await profileResponse.json();
+                    throw new Error(errorData.error || 'Failed to fetch profile data');
+                  }
+                  const profileData = await profileResponse.json();
+                  setProfileData(profileData);
+                  
+                  // Fetch user organizations
+                  const organizationsResponse = await fetch('/api/users/me/organizations', {
+                    next: { revalidate: 0 } // Force revalidation
+                  });
+                  
+                  if (!organizationsResponse.ok) {
+                    const errorData = await organizationsResponse.json();
+                    throw new Error(errorData.error || 'Failed to fetch organizations');
+                  }
+                  const organizationsData = await organizationsResponse.json();
+                  setOrganizations(organizationsData.organizations);
+                  
+                } catch (err) {
+                  console.error('Error fetching profile data:', err);
+                  setError(err instanceof Error ? err.message : 'An error occurred while fetching profile data');
+                  toast.error('Error loading profile data', {
+                    description: err instanceof Error ? err.message : 'Please try again later',
+                  });
+                } finally {
+                  setIsLoading(false);
+                }
+              }
+              
+              refetchData();
+            }}>
               Try Again
             </Button>
           </CardFooter>
