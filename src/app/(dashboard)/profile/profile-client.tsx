@@ -3,72 +3,111 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { User, UserOrganization } from '@prisma/client';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { ProfileHeader } from './components/profile-header';
 import { PersonalInfoForm } from './components/personal-info-form';
 import { PasswordChangeForm } from './components/password-change-form';
 import { OrganizationsList } from './components/organizations-list';
 import { AccountDeletionSection } from './components/account-deletion-section';
-import { toast } from 'sonner';
 
-interface ProfileClientProps {
-  user: User & {
-    organizations: (UserOrganization & {
-      organization: {
-        id: string;
-        name: string;
-        slug: string;
-      };
-      role: {
-        id: string;
-        name: string;
-      };
-    })[];
-  };
+// Define types for the API responses
+interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+  jobTitle: string | null;
+  bio: string | null;
 }
 
-export default function ProfileClient({ user }: ProfileClientProps) {
-  const [activeTab, setActiveTab] = useState('personal');
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  domain?: string | null;
+}
+
+interface Role {
+  id: string;
+  name: string;
+}
+
+interface UserOrganization {
+  id: string;
+  organizationId: string;
+  organization: Organization;
+  role: Role;
+}
+
+export default function ProfileClient() {
   const router = useRouter();
-  const [hasError, setHasError] = useState(false);
-  
-  // Add error handling for any missing user data
+  const [activeTab, setActiveTab] = useState('personal');
+  const [isLoading, setIsLoading] = useState(true);
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const [organizations, setOrganizations] = useState<UserOrganization[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    try {
-      // Check if the user object has all required properties
-      if (!user) {
-        console.error('User object is undefined');
-        setHasError(true);
-        toast.error('Error loading profile data', {
-          description: 'Please try again later',
+    async function fetchProfileData() {
+      try {
+        setIsLoading(true);
+        
+        // Fetch user profile data
+        const profileResponse = await fetch('/api/user/profile');
+        if (!profileResponse.ok) {
+          const errorData = await profileResponse.json();
+          throw new Error(errorData.error || 'Failed to fetch profile data');
+        }
+        const profileData = await profileResponse.json();
+        setProfileData(profileData);
+        
+        // Fetch user organizations
+        const organizationsResponse = await fetch('/api/users/me/organizations');
+        if (!organizationsResponse.ok) {
+          const errorData = await organizationsResponse.json();
+          throw new Error(errorData.error || 'Failed to fetch organizations');
+        }
+        const organizationsData = await organizationsResponse.json();
+        setOrganizations(organizationsData.organizations);
+        
+        // Log successful data load for debugging
+        console.log('Profile data loaded successfully', {
+          profileData,
+          organizations: organizationsData.organizations,
         });
-        // Don't redirect immediately to avoid infinite redirect loops
-        return;
+        
+      } catch (err) {
+        console.error('Error fetching profile data:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching profile data');
+        toast.error('Error loading profile data', {
+          description: err instanceof Error ? err.message : 'Please try again later',
+        });
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Log user data for debugging
-      console.log('User data loaded successfully', {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        jobTitle: user.jobTitle,
-        bio: user.bio
-      });
-      
-    } catch (error) {
-      console.error('Error in ProfileClient:', error);
-      setHasError(true);
-      toast.error('Error loading profile data', {
-        description: 'Please try again later',
-      });
     }
-  }, [user, router]);
-  
-  // If there's an error, show a simple error UI instead of redirecting
-  if (hasError) {
+    
+    fetchProfileData();
+  }, []);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading your profile data...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !profileData) {
     return (
       <div className="space-y-6">
         <div>
@@ -88,26 +127,31 @@ export default function ProfileClient({ user }: ProfileClientProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <p className="mb-4">{error || 'Failed to load profile data'}</p>
             <p className="mb-4">This could be due to one of the following reasons:</p>
             <ul className="list-disc ml-5 space-y-2">
               <li>Your session has expired</li>
               <li>There&apos;s an issue with your account data</li>
               <li>The server is currently experiencing problems</li>
             </ul>
-            <div className="mt-6">
-              <button 
-                onClick={() => router.push('/dashboard')}
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-              >
-                Return to Dashboard
-              </button>
-            </div>
           </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button 
+              variant="outline"
+              onClick={() => router.push('/dashboard')}
+            >
+              Return to Dashboard
+            </Button>
+            <Button onClick={() => router.refresh()}>
+              Try Again
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     );
   }
-  
+
+  // Successful state
   return (
     <div className="space-y-6">
       <div>
@@ -120,9 +164,9 @@ export default function ProfileClient({ user }: ProfileClientProps) {
       <Separator />
       
       <ProfileHeader 
-        name={user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
-        email={user.email}
-        avatarUrl={user.avatarUrl}
+        name={profileData.name || `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim() || profileData.email}
+        email={profileData.email}
+        avatarUrl={profileData.avatarUrl}
       />
       
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -142,7 +186,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <PersonalInfoForm user={user} />
+              <PersonalInfoForm user={profileData} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -170,7 +214,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <OrganizationsList organizations={user.organizations} />
+              <OrganizationsList organizations={organizations} />
             </CardContent>
           </Card>
         </TabsContent>

@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { User } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -30,8 +29,20 @@ const personalInfoSchema = z.object({
 
 type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
 
+// Define interface for the user profile data from API
+interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+  jobTitle: string | null;
+  bio: string | null;
+}
+
 interface PersonalInfoFormProps {
-  user: User;
+  user: UserProfile;
 }
 
 export function PersonalInfoForm({ user }: PersonalInfoFormProps) {

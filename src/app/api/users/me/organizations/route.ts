@@ -1,56 +1,73 @@
 import { NextResponse } from 'next/server';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { getUserOrganizations } from '@/services/organizationService';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
-// Define a type for the user organization with its relations
-interface UserOrgWithRelations {
-  organization: {
-    id: string;
-    name: string;
-    domain: string | null;
-  };
-  role: {
-    id: string;
-    name: string;
-    permissions: string[];
-  };
-  createdAt: Date;
-}
-
+// Get organizations the current user belongs to
 export async function GET() {
   try {
-    // Get the current user
-    const supabase = createClientComponentClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // Get the user session
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
     
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Get user organizations
-    const organizations = await getUserOrganizations(user.id);
-    
-    // Transform the data for the frontend
-    const transformedOrganizations = organizations.map((userOrg: UserOrgWithRelations) => ({
-      id: userOrg.organization.id,
-      name: userOrg.organization.name,
-      domain: userOrg.organization.domain,
-      role: {
-        id: userOrg.role.id,
-        name: userOrg.role.name,
-        permissions: userOrg.role.permissions,
+    // Get organizations the user belongs to
+    const userOrganizations = await prisma.userOrganization.findMany({
+      where: { userId: session.user.id },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            domain: true,
+          },
+        },
+        role: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
-      joinedAt: userOrg.createdAt,
+    });
+    
+    // Transform the data to a clean format for the client
+    const organizations = userOrganizations.map(membership => ({
+      id: membership.id,
+      organizationId: membership.organizationId,
+      organization: {
+        id: membership.organization.id,
+        name: membership.organization.name,
+        slug: membership.organization.slug,
+        domain: membership.organization.domain,
+      },
+      role: {
+        id: membership.role.id,
+        name: membership.role.name,
+      },
     }));
     
-    return NextResponse.json({ organizations: transformedOrganizations });
+    return NextResponse.json({ organizations });
   } catch (error) {
-    console.error('Error getting user organizations:', error);
+    console.error('Error fetching organizations:', error);
     return NextResponse.json(
-      { error: 'Failed to get user organizations' },
+      { error: 'Failed to fetch organizations' },
       { status: 500 }
     );
   }

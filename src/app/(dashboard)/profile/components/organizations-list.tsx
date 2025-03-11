@@ -1,22 +1,31 @@
 'use client';
 
-import { UserOrganization } from '@prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
+// Define the interface for the API response data
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  domain?: string | null;
+}
+
+interface Role {
+  id: string;
+  name: string;
+}
+
+interface UserOrganization {
+  id: string;
+  organizationId: string;
+  organization: Organization;
+  role: Role;
+}
+
 interface OrganizationsListProps {
-  organizations: (UserOrganization & {
-    organization: {
-      id: string;
-      name: string;
-      slug: string;
-    };
-    role: {
-      id: string;
-      name: string;
-    };
-  })[];
+  organizations: UserOrganization[];
 }
 
 export function OrganizationsList({ organizations }: OrganizationsListProps) {
