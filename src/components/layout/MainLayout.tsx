@@ -47,13 +47,13 @@ export function MainLayout({ children }: MainLayoutProps) {
     async function fetchUserOrganizations() {
       if (!user) return;
       
+      // Skip fetching if we already have organizations loaded
+      if (userOrganizations.length > 0 && !isLoadingOrgs) return;
+      
       try {
         setIsLoadingOrgs(true);
         const response = await fetch('/api/users/me/organizations', {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
+          next: { revalidate: 60 } // Revalidate every 60 seconds instead of on every focus
         });
         
         if (response.ok) {
@@ -89,7 +89,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
     
     fetchUserOrganizations();
-  }, [user]);
+  }, [user, userOrganizations, isLoadingOrgs]);
 
   const userProfile = user ? {
     id: user.id,
@@ -140,7 +140,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="p-4">
             <SidebarTrigger className="mb-6" />
           </div>
-          <div className="px-4 md:px-6 w-full">
+          <div className="px-12 md:px-12 w-full">
             {children}
           </div>
         </main>
