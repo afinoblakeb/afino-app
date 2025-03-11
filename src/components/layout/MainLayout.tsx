@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { AppSidebar } from './Sidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/providers/AuthProvider';
@@ -20,6 +21,11 @@ type MainLayoutProps = {
 export function MainLayout({ children }: MainLayoutProps) {
   // Get authentication state from AuthProvider
   const { user, isLoading } = useAuth();
+  const pathname = usePathname();
+
+  // Check if current page is profile or organizations
+  const isFullWidthPage = pathname?.includes('/profile') || 
+                          pathname?.includes('/organizations');
 
   // Mock data for demonstration purposes
   // In a real app, this would come from your API/database
@@ -86,8 +92,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="p-4">
             <SidebarTrigger className="mb-6" />
           </div>
-          <div className="container mx-auto px-4 md:px-6">
-            <h1 className="text-2xl font-bold mb-6">Afino Platform</h1>
+          <div className={isFullWidthPage ? "px-4 md:px-6 w-full" : "container mx-auto px-4 md:px-6"}>
+            {!isFullWidthPage && <h1 className="text-2xl font-bold mb-6">Afino Platform</h1>}
             {children}
           </div>
         </main>

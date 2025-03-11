@@ -61,7 +61,6 @@ export default function OrganizationsClient() {
         const data = await response.json();
         setOrganizations(data.organizations);
         
-        console.log('Organizations loaded:', data.organizations);
       } catch (err) {
         console.error('Error fetching organizations:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');

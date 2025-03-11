@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
   LayoutDashboard,
   FolderTree,
-  Settings,
   User,
   PanelLeftIcon,
   BarChart,
@@ -16,6 +15,7 @@ import {
   Mail,
   Shield,
   LogOut,
+  PlusCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -50,6 +50,17 @@ type Organization = {
   logoUrl?: string;
 };
 
+interface UserOrganizationResponse {
+  organizations: Array<{
+    organization: {
+      id: string;
+      name: string;
+      slug: string;
+      domain?: string | null;
+    };
+  }>;
+}
+
 type SidebarProps = {
   organizations: Organization[];
   currentOrganization: Organization;
@@ -79,21 +90,60 @@ function CustomSidebarTrigger() {
 }
 
 export function AppSidebar({
+  organizations,
   currentOrganization,
   user,
+  onOrganizationChange,
 }: SidebarProps) {
   const { signOut } = useAuth();
   const router = useRouter();
+  const [userOrganizations, setUserOrganizations] = useState<Organization[]>(organizations);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     'Main Section': true,
     'Secondary Section': false,
   });
+
+  // Fetch real organizations from the API
+  useEffect(() => {
+    async function fetchOrganizations() {
+      try {
+        const response = await fetch('/api/users/me/organizations', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json() as UserOrganizationResponse;
+          if (data.organizations && data.organizations.length > 0) {
+            const mappedOrgs = data.organizations.map((org) => ({
+              id: org.organization.id,
+              name: org.organization.name,
+              slug: org.organization.slug,
+              logoUrl: '', // Add logoUrl if available
+            }));
+            setUserOrganizations(mappedOrgs);
+          }
+        }
+      } catch {
+        // Silently fail and use the provided organizations as fallback
+      }
+    }
+    
+    fetchOrganizations();
+  }, []);
 
   const toggleExpanded = (key: string) => {
     setExpanded((prev) => ({
       ...prev,
       [key]: !prev[key],
     }));
+  };
+
+  const handleOrganizationSelect = (org: Organization) => {
+    onOrganizationChange(org);
+    router.push(`/organizations/${org.slug}`);
   };
 
   return (
@@ -122,8 +172,34 @@ export function AppSidebar({
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuLabel>Organization Switcher</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-muted-foreground">
-                Organization List
+              
+              {userOrganizations.map((org) => (
+                <DropdownMenuItem 
+                  key={org.id}
+                  onClick={() => handleOrganizationSelect(org)}
+                  className={org.id === currentOrganization.id ? "bg-muted" : ""}
+                >
+                  <Avatar className="h-6 w-6 mr-2">
+                    {org.logoUrl ? (
+                      <AvatarImage src={org.logoUrl} alt={org.name} />
+                    ) : (
+                      <AvatarFallback className="text-xs">
+                        {org.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <span>{org.name}</span>
+                </DropdownMenuItem>
+              ))}
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/organizations')}>
+                <Briefcase className="h-4 w-4 mr-2" />
+                All Organizations
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/organizations/new')}>
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Create New Organization
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -136,22 +212,6 @@ export function AppSidebar({
               <SidebarMenuButton onClick={() => router.push('/dashboard')}>
                 <LayoutDashboard className="h-4 w-4 mr-2" />
                 <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-
-            {/* Organizations */}
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => router.push('/organizations')}>
-                <Briefcase className="h-4 w-4 mr-2" />
-                <span className="group-data-[collapsible=icon]:hidden">Organizations</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-
-            {/* User Profile */}
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => router.push('/profile')}>
-                <User className="h-4 w-4 mr-2" />
-                <span className="group-data-[collapsible=icon]:hidden">Profile</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
@@ -223,6 +283,14 @@ export function AppSidebar({
 
         <SidebarFooter>
           <Separator />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => router.push('/profile')}>
+                <User className="h-4 w-4 mr-2" />
+                <span className="group-data-[collapsible=icon]:hidden">My Profile</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
           <div className="p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -250,18 +318,14 @@ export function AppSidebar({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>User Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>User Settings</span>
+                <DropdownMenuItem onClick={() => router.push('/profile')}>
+                  <User className="h-4 w-4 mr-2" />
+                  <span>My Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign Out</span>
+                <DropdownMenuItem onClick={() => signOut()}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

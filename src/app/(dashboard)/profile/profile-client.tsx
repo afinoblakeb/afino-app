@@ -95,12 +95,6 @@ export default function ProfileClient() {
         const organizationsData = await organizationsResponse.json();
         setOrganizations(organizationsData.organizations);
         
-        // Log successful data load for debugging
-        console.log('Profile data loaded successfully', {
-          profileData,
-          organizations: organizationsData.organizations,
-        });
-        
       } catch (err) {
         console.error('Error fetching profile data:', err);
         setError(err instanceof Error ? err.message : 'An error occurred while fetching profile data');
