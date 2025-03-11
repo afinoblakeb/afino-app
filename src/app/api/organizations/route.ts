@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 import { createOrganization, getOrganizationBySlug, findOrganizationByDomain } from '@/services/organizationService';
 import { getOrCreateAdminRoleForOrganization } from '@/services/roleService';
 import { addUserToOrganization } from '@/services/organizationService';
-import { extractDomain } from '@/utils/domainUtils';
 import { z } from 'zod';
 
 // Schema for request validation
@@ -68,12 +67,15 @@ export async function POST(request: Request) {
       }
     }
     
-    // If domain is not provided, extract it from the user's email
-    const orgDomain = domain || (user.email ? extractDomain(user.email) : null);
+    // Only use the domain if explicitly provided by the user
+    const orgDomain = domain && domain.trim() !== '' ? domain.trim() : null;
     
     // Check if domain is already in use (if a domain is provided)
     if (orgDomain) {
+      console.log('Checking domain:', orgDomain);
       const existingOrgWithDomain = await findOrganizationByDomain(orgDomain);
+      console.log('Existing org with domain:', existingOrgWithDomain);
+      
       if (existingOrgWithDomain) {
         return NextResponse.json(
           { error: 'An organization with this domain already exists' },

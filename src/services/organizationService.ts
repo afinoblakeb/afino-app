@@ -18,12 +18,16 @@ function generateSlug(name: string): string {
  * Finds an organization by domain
  */
 export async function findOrganizationByDomain(domain: string): Promise<Organization | null> {
-  if (!domain) {
+  if (!domain || typeof domain !== 'string' || domain.trim() === '') {
     return null;
   }
   
+  // Normalize domain by trimming and converting to lowercase
+  const normalizedDomain = domain.trim().toLowerCase();
+  console.log('Finding organization by normalized domain:', normalizedDomain);
+  
   return prisma.organization.findUnique({
-    where: { domain },
+    where: { domain: normalizedDomain },
   });
 }
 
@@ -68,8 +72,13 @@ export async function createOrganization(
   // Generate slug if not provided
   const orgSlug = slug || generateSlug(name);
   
-  // If domain is empty string, set it to null to avoid unique constraint issues
-  const normalizedDomain = domain && domain.trim() !== '' ? domain.trim() : null;
+  // If domain is empty string or whitespace, set it to null to avoid unique constraint issues
+  // Otherwise, normalize it by trimming and converting to lowercase
+  const normalizedDomain = domain && domain.trim() !== '' 
+    ? domain.trim().toLowerCase() 
+    : null;
+  
+  console.log('Creating organization with normalized domain:', normalizedDomain);
   
   const organization = await prisma.organization.create({
     data: {

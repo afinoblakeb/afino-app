@@ -109,15 +109,14 @@ export default function NewOrganizationForm() {
         }),
       });
 
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create organization');
+        throw new Error(responseData.error || 'Failed to create organization');
       }
 
-      const result = await response.json();
-      
       // Redirect to the new organization's dashboard
-      router.push(`/organizations/${result.organization.slug}`);
+      router.push(`/organizations/${responseData.organization.slug}`);
     } catch (error) {
       console.error('Error creating organization:', error);
       setError(error instanceof Error ? error.message : 'An unexpected error occurred');
