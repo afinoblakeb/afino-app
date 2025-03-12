@@ -3,30 +3,45 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserSupabaseClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClientComponentClient();
-
+  
   // Check if user is authenticated
   useEffect(() => {
     async function checkAuth() {
       try {
         setLoading(true);
         
+        // Create a Supabase client for browser environment
+        // The client will automatically handle code exchange if there's a code in the URL
+        // This is configured in the client setup with detectSessionInUrl: true
+        const supabase = createBrowserSupabaseClient();
+        
         // Check if user is authenticated
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+        
+        if (getUserError) {
+          console.error('[Dashboard] Error getting user:', getUserError);
+          setError('Authentication error: ' + getUserError.message);
+          setLoading(false);
+          return;
+        }
         
         if (!user) {
+          console.log('[Dashboard] No authenticated user found, redirecting to sign-in');
           router.push('/auth/signin');
           return;
         }
+        
+        console.log('[Dashboard] Authenticated user found:', user.id);
+        
       } catch (error) {
-        console.error('Error checking authentication:', error);
+        console.error('[Dashboard] Error checking authentication:', error);
         setError('Authentication error');
       } finally {
         setLoading(false);
@@ -34,7 +49,7 @@ export default function DashboardPage() {
     }
     
     checkAuth();
-  }, [router, supabase]);
+  }, [router]);
 
   if (loading) {
     return (

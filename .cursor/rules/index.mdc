@@ -1,5 +1,5 @@
 ---
-description: 
+description: This directory contains specific rules for the Cursor Agent to follow when working with the Afino App codebase
 globs: 
 alwaysApply: false
 ---

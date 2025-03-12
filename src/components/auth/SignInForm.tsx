@@ -7,6 +7,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/utils/supabase/client';
+import { useAuth } from '@/providers/AuthProvider';
 
 // Form validation schema
 const signInSchema = z.object({
@@ -18,6 +19,7 @@ type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function SignInForm() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -35,30 +37,91 @@ export default function SignInForm() {
     },
   });
 
+  // Check if already authenticated
+  if (user) {
+    router.push('/dashboard');
+    return null;
+  }
+
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     setFormError(null);
 
     try {
+      console.log('[SignInForm] Starting Google sign-in process');
+      
+      // Log if any auth params are in the URL already
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.has('error')) {
+        console.log('[SignInForm] URL contains error parameter:', currentUrl.searchParams.get('error'));
+      }
+      
+      // Create a fresh Supabase client for this auth request
       const supabase = createBrowserSupabaseClient();
       
-      // Sign in with Google using PKCE flow - simplified approach
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Get the next URL from the query parameters if available
+      const urlParams = new URLSearchParams(window.location.search);
+      const nextUrl = urlParams.get('next') || '/dashboard';
+      console.log(`[SignInForm] Next URL for redirect: ${nextUrl}`);
+      
+      // IMPORTANT: Do NOT clear localStorage items - they are needed for PKCE flow
+      
+      // Debug: check localStorage state before auth
+      console.log('[SignInForm] Checking localStorage state before auth');
+      try {
+        // Safe way to list localStorage items (in case of access restrictions)
+        const lsItems = Object.keys(localStorage).filter(key => 
+          key.startsWith('sb-') || key.includes('supabase')
+        );
+        console.log(`[SignInForm] Found ${lsItems.length} Supabase-related localStorage items`);
+        lsItems.forEach(key => console.log(`  ${key}`));
+      } catch (e) {
+        console.error('[SignInForm] Error accessing localStorage:', e);
+      }
+      
+      // Set this flag early in case we need to show the error before redirect completes
+      setIsGoogleLoading(true);
+      
+      // Sign in with Google using PKCE flow
+      console.log('[SignInForm] Initiating OAuth sign-in with Google');
+      const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`;
+      console.log(`[SignInForm] Redirect URL: ${redirectUrl}`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: false, // Let Supabase handle the redirect automatically
         },
       });
 
       if (error) {
-        console.error('Google sign-in error:', error);
+        console.error('[SignInForm] Google sign-in error:', error);
         setFormError(error.message);
         setIsGoogleLoading(false);
+        return;
       }
-      // The redirect will be handled by Supabase
+      
+      // Log the OAuth URL if available
+      if (data?.url) {
+        console.log('[SignInForm] OAuth URL provided:', data.url.substring(0, 100) + '...');
+      } else {
+        console.log('[SignInForm] No OAuth URL was returned from signInWithOAuth');
+      }
+      
+      // If we get here and there's no redirect happening,
+      // something is wrong with the Supabase client configuration
+      const redirectTimeout = setTimeout(() => {
+        console.error('[SignInForm] No redirect occurred within expected timeframe');
+        setIsGoogleLoading(false);
+        setFormError('Authentication initiated but redirect failed. Please try again.');
+      }, 3000);
+      
+      // Cleanup function to cancel the timeout if component unmounts
+      return () => clearTimeout(redirectTimeout);
     } catch (error) {
-      console.error('Unexpected error during Google sign-in:', error);
-      setFormError('An unexpected error occurred. Please try again.');
+      console.error('[SignInForm] Unexpected error during Google sign-in:', error);
+      setFormError(`Authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsGoogleLoading(false);
     }
   };
@@ -68,26 +131,39 @@ export default function SignInForm() {
     setFormError(null);
 
     try {
+      console.log('[SignInForm] Starting email sign-in process');
       const supabase = createBrowserSupabaseClient();
-      // Sign in with Supabase
-      const { data: userData, error } = await supabase.auth.signInWithPassword({
+      
+      // Sign in with email and password
+      const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) {
+        console.error('[SignInForm] Email sign-in error:', error);
         setFormError(error.message);
         setIsLoading(false);
         return;
       }
 
-      if (userData?.user) {
-        // Redirect to dashboard on successful sign-in
-        router.push('/dashboard');
-        router.refresh();
-      }
+      console.log('[SignInForm] Email sign-in successful');
+      
+      // Get the next URL from the query parameters if available
+      const urlParams = new URLSearchParams(window.location.search);
+      const nextUrl = urlParams.get('next') || '/dashboard';
+      
+      // No need to manually redirect, the middleware will handle it
+      // Just refresh the router to trigger the middleware
+      console.log('[SignInForm] Triggering router refresh for middleware redirect');
+      router.refresh();
+      
+      // As a fallback, also push to the next URL
+      setTimeout(() => {
+        router.push(nextUrl);
+      }, 500);
     } catch (error) {
-      console.error('Unexpected error during email sign-in:', error);
+      console.error('[SignInForm] Unexpected error during email sign-in:', error);
       setFormError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }

@@ -27,21 +27,59 @@ const handleProfileError = (error: unknown) => {
  * Fetches user profile data from the API
  */
 async function fetchUserProfile(): Promise<UserProfile> {
-  const response = await fetch('/api/users/me', {
-    headers: {
-      'Content-Type': 'application/json',
-      // Add cache control headers to prevent refetching
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    },
-  });
+  console.log('[useUserProfile] Fetching user profile data');
+  
+  try {
+    const response = await fetch('/api/users/me', {
+      headers: {
+        'Content-Type': 'application/json',
+        // Add cache control headers to prevent refetching
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to fetch user profile');
+    console.log('[useUserProfile] API response status:', response.status);
+    
+    // Check the content type of the response
+    const contentType = response.headers.get('content-type') || '';
+    console.log('[useUserProfile] Response content type:', contentType);
+    
+    // For debugging, log cookie presence
+    const cookies = document.cookie;
+    console.log('[useUserProfile] Has cookies:', !!cookies, 'Cookie count:', cookies.split(';').length);
+
+    if (!response.ok) {
+      // If content type is HTML, this might be a redirect to login page
+      if (contentType.includes('text/html')) {
+        console.warn('[useUserProfile] Received HTML response instead of JSON, likely a redirect');
+        throw new Error('Authentication required - redirecting to login');
+      }
+      
+      const errorData = await response.json().catch(() => {
+        console.error('[useUserProfile] Failed to parse error response JSON');
+        return { message: 'Unknown error (failed to parse response)' };
+      });
+      
+      console.error('[useUserProfile] Error response:', errorData);
+      throw new Error(errorData.message || `API error: ${response.status}`);
+    }
+    
+    // Skip HTML check - attempt to parse as JSON regardless of content type
+    // Next.js API routes might return JSON without setting the proper content type
+
+    try {
+      const data = await response.json();
+      console.log('[useUserProfile] Successfully fetched user profile');
+      return data;
+    } catch (parseError) {
+      console.error('[useUserProfile] JSON parsing error:', parseError);
+      throw new Error('Failed to parse response as JSON');
+    }
+  } catch (error) {
+    console.error('[useUserProfile] Error during fetch:', error);
+    throw error;
   }
-
-  return await response.json();
 }
 
 /**

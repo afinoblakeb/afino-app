@@ -1,44 +1,64 @@
-import { createBrowserClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
+/**
+ * Creates a Supabase client for server components
+ * Uses cookie-based auth with proper session handling
+ */
 export async function createServerSupabaseClient() {
-  // We don't need to store the cookieStore since we're not using it directly
-  // The cookies are handled automatically by the fetch credentials
+  const cookieStore = await cookies()
   
-  return createClient(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      auth: {
-        persistSession: false,
-      },
-      global: {
-        fetch: async (url, options = {}) => {
-          const response = await fetch(url, {
-            ...options,
-            credentials: 'include',
-          })
-
-          // Set cookies from response headers in the cookie jar
-          const setCookieHeader = response.headers.get('set-cookie')
-          if (setCookieHeader) {
-            // Parse the Set-Cookie header and set cookies
-            // We can't directly set cookies from server components
-            // This is just for handling the fetch response
-            // The actual cookie setting will be handled by Supabase's auth system
-            console.log('Set-Cookie header received:', setCookieHeader)
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch {
+            // This can happen in middleware or Generate/RSC actions
+            // It's handled by the library
           }
-
-          return response
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch {
+            // This can happen in middleware or Generate/RSC actions
+            // It's handled by the library
+          }
         },
       },
     }
   )
 }
 
-export function createBrowserSupabaseClient() {
-  return createBrowserClient(
+/**
+ * Creates a Supabase client for route handlers
+ * @param {Promise<ReturnType<typeof cookies>>} cookieStorePromise - Cookie store promise from route handler
+ */
+export async function createRouteHandlerClient(cookieStorePromise: ReturnType<typeof cookies>) {
+  const cookieStore = await cookieStorePromise
+  
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options })
+        },
+      },
+    }
   )
 } 

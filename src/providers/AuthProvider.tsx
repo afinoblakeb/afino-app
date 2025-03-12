@@ -1,9 +1,9 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { createBrowserSupabaseClient } from '@/utils/supabase/client';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 
 type AuthContextType = {
@@ -20,92 +20,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
   const queryClient = useQueryClient();
-  // Track if this is an initial auth check or a subsequent check
-  const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
   
-  // Create a Supabase client instance using a ref to avoid dependency issues
-  const supabaseRef = useRef(createBrowserSupabaseClient());
-  const supabase = supabaseRef.current;
-
-  // Handle OAuth callback
-  const handleOAuthCallback = useCallback(async () => {
-    // Check if we're on the callback page
-    if (typeof window !== 'undefined' && pathname === '/auth/callback') {
-      console.log('[AuthProvider] On callback page, handling OAuth callback');
-      
-      try {
-        // The code and code_verifier are automatically handled by Supabase
-        // Just get the session
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('[AuthProvider] Error getting session on callback page:', error);
-          return;
-        }
-        
-        if (data.session) {
-          console.log('[AuthProvider] Session found on callback page, redirecting to dashboard');
-          // Redirect to dashboard
-          router.push('/dashboard');
-        } else {
-          console.log('[AuthProvider] No session found on callback page');
-        }
-      } catch (error) {
-        console.error('[AuthProvider] Error handling OAuth callback:', error);
-      }
-    }
-  }, [pathname, router]);
-
-  // Check for hash fragment in URL (from OAuth redirect)
-  useEffect(() => {
-    console.log('[AuthProvider] Checking for hash fragment');
-    const checkHashFragment = async () => {
-      if (typeof window !== 'undefined' && window.location.hash) {
-        console.log('[AuthProvider] Hash fragment found:', window.location.hash);
-        try {
-          // Let Supabase handle the hash fragment
-          const { data } = await supabase.auth.getSession();
-          
-          if (data.session) {
-            console.log('[AuthProvider] Session found in hash fragment, setting session');
-            // Explicitly set the session in cookies
-            await supabase.auth.setSession({
-              access_token: data.session.access_token,
-              refresh_token: data.session.refresh_token,
-            });
-            
-            // Clear the hash fragment
-            window.location.hash = '';
-            
-            console.log('[AuthProvider] Redirecting to dashboard after hash fragment handling');
-            // Force a hard reload to ensure cookies are properly set
-            window.location.href = '/dashboard';
-          }
-        } catch (error) {
-          console.error('[AuthProvider] Error handling hash fragment:', error);
-        }
-      } else {
-        console.log('[AuthProvider] No hash fragment found');
-      }
-    };
-    
-    checkHashFragment();
-  }, []);
-
-  // Handle OAuth callback when on the callback page
-  useEffect(() => {
-    handleOAuthCallback();
-  }, [handleOAuthCallback]);
-
+  // Create a Supabase client for browser environment
+  // Unlike before, we don't need a useRef because we're using a function to get a fresh client
+  // This ensures we always have the latest configuration
+  const getSupabase = () => createBrowserSupabaseClient();
+  
   useEffect(() => {
     console.log('[AuthProvider] Initial session check');
     
-    const getSession = async () => {
+    const checkSession = async () => {
       setIsLoading(true);
       
       try {
+        const supabase = getSupabase();
+        console.log('[AuthProvider] Fetching session from Supabase');
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -113,82 +43,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        console.log('[AuthProvider] Session check result:', !!data.session);
+        console.log(
+          '[AuthProvider] Session check result:', 
+          !!data.session, 
+          'User ID:', 
+          data.session?.user?.id || 'none'
+        );
         
         setSession(data.session);
         setUser(data.session?.user || null);
-        
-        // If we have a session but are on an auth page, redirect to dashboard
-        // ONLY redirect if we're on an auth page, not for general session checks
-        if (data.session && typeof window !== 'undefined' && pathname?.startsWith('/auth') && pathname !== '/auth/callback') {
-          console.log('[AuthProvider] Redirecting from auth page to dashboard');
-          router.push('/dashboard');
-        }
       } catch (error) {
         console.error('[AuthProvider] Error checking session:', error);
       } finally {
         setIsLoading(false);
-        setInitialAuthCheckComplete(true);
       }
     };
 
-    getSession();
+    // Initial session check
+    checkSession();
 
+    // Set up auth state change listener
     console.log('[AuthProvider] Setting up auth state change listener');
+    const supabase = getSupabase();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('[AuthProvider] Auth state changed:', event, 'Session exists:', !!session);
+      async (event, currentSession) => {
+        console.log(
+          '[AuthProvider] Auth state changed:', 
+          event, 
+          'Session exists:', 
+          !!currentSession, 
+          'User ID:', 
+          currentSession?.user?.id || 'none'
+        );
         
-        // Only process relevant events
+        if (event === 'SIGNED_OUT') {
+          // Clear auth state on sign out
+          setSession(null);
+          setUser(null);
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          // Update session state for these events
+          setSession(currentSession);
+          setUser(currentSession?.user || null);
+        }
+        
+        setIsLoading(false);
+        
+        // Invalidate all queries to refetch data with new auth state
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-          setSession(session);
-          setUser(session?.user || null);
-          setIsLoading(false);
-          
-          // Invalidate all queries to refetch data with new auth state
+          console.log('[AuthProvider] Invalidating queries due to auth state change:', event);
           queryClient.invalidateQueries();
-          
-          // Handle redirects
-          if (event === 'SIGNED_IN' && session) {
-            console.log('[AuthProvider] User signed in, redirecting to dashboard');
-            router.push('/dashboard');
-          } else if (event === 'SIGNED_OUT') {
-            console.log('[AuthProvider] User signed out, redirecting to signin');
-            router.push('/auth/signin');
-          }
-        } else if (event === 'TOKEN_REFRESHED') {
-          // Just update the session without triggering refetches or redirects
-          console.log('[AuthProvider] Token refreshed, updating session without redirect');
-          setSession(session);
-          setUser(session?.user || null);
-        } else {
-          console.log('[AuthProvider] Ignoring other auth event:', event);
         }
       }
     );
 
+    // Clean up the subscription when the component unmounts
     return () => {
       console.log('[AuthProvider] Cleaning up auth state change listener');
       subscription.unsubscribe();
     };
-  }, [router, queryClient, initialAuthCheckComplete, pathname]);
+  }, [queryClient]);
 
   const signOut = async () => {
     console.log('[AuthProvider] Sign out initiated');
     setIsLoading(true);
     
     try {
-      await supabase.auth.signOut();
+      const supabase = getSupabase();
+      console.log('[AuthProvider] Calling Supabase signOut method');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('[AuthProvider] Error during sign out:', error);
+        throw error;
+      }
+      
       console.log('[AuthProvider] Supabase sign out successful');
       
       // Clear React Query cache on logout
+      console.log('[AuthProvider] Clearing query cache');
       queryClient.clear();
       
-      setSession(null);
-      setUser(null);
+      // State is updated by onAuthStateChange listener
       
-      console.log('[AuthProvider] Redirecting to signin page');
-      router.push('/auth/signin');
+      // Let the middleware handle the redirect
+      console.log('[AuthProvider] Refreshing router to trigger middleware redirect');
+      router.refresh();
     } catch (error) {
       console.error('[AuthProvider] Error signing out:', error);
     } finally {
