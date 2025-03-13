@@ -9,32 +9,8 @@ This document outlines a systematic approach to clean up authentication-related 
 3. DO run `npm run build` after each file is edited to ensure no build errors.
 4. DO pause any work if clarification is needed.
 5. DO update this plan with [x] as the review and clean up is performed.
-
-## Existing Build Issues
-
-The following build errors need to be addressed before proceeding with the cleanup:
-
-```
-Failed to compile.
-
-./src/app/onboarding/onboarding-client.tsx
-Module not found: Can't resolve '@supabase/auth-helpers-nextjs'
-
-./src/app/api/organizations/join/route.ts
-Module not found: Can't resolve '@supabase/auth-helpers-nextjs'
-```
-
-These errors indicate that there are references to the deprecated `@supabase/auth-helpers-nextjs` package which should be replaced with the current Supabase client approach.
-
-### Specific Changes Needed:
-
-1. In `src/app/onboarding/onboarding-client.tsx`:
-   - Replace `import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';` with `import { createClient } from '@/utils/supabase/client';`
-   - Replace `const supabase = createClientComponentClient();` with `const supabase = createClient();`
-
-2. In `src/app/api/organizations/join/route.ts`:
-   - Replace `import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';` with `import { createClient } from '@/utils/supabase/client';`
-   - Replace `const supabase = createClientComponentClient();` with `const supabase = createClient();`
+6. DO review similar files to understand existing coding patterns before implementing fixes. Maintain consistent patterns throughout the project.
+7. DO consult before implementing any unique coding patterns that differ from established patterns in the codebase.
 
 ## Checklist
 
@@ -115,32 +91,34 @@ For each file in the checklist:
    - Outdated comments
    - References to deprecated packages (like `@supabase/auth-helpers-nextjs`)
 
-2. Make necessary changes:
+2. Before making changes:
+   - Review similar files to understand established coding patterns
+   - Identify the most consistent and clean approach used elsewhere in the codebase
+   - Consult before implementing any unique patterns that differ from established ones
+
+3. Make necessary changes:
    - Remove all console.log statements
    - Remove unnecessary commented code
    - Clean up any hacks with proper implementations
    - Ensure consistent error handling
    - Update comments to reflect current code
    - Replace deprecated package references with current approaches
+   - Maintain consistent coding patterns across similar files
 
-3. Run `npm run build` to verify no build errors were introduced
+4. Run `npm run build` to verify no build errors were introduced
 
-4. Mark the item as completed in this checklist with [x]
+5. Mark the item as completed in this checklist with [x]
 
 ## Priority Order
 
-1. First, fix the build errors by addressing the files with deprecated package references:
-   - `src/app/onboarding/onboarding-client.tsx`
-   - `src/app/api/organizations/join/route.ts`
-
-2. Then proceed with core authentication files:
+1. Start with core authentication files:
    - `src/providers/AuthProvider.tsx`
    - `src/utils/supabase/middleware.ts`
    - Other core files
 
-3. Continue with components, pages, and utilities
+2. Continue with components, pages, and utilities
 
-4. Finally, update tests to match the cleaned code
+3. Finally, update tests to match the cleaned code
 
 ## Progress Tracking
 
@@ -155,29 +133,26 @@ For each file in the checklist:
 - The AuthProvider.tsx contains many console.log statements that should be removed
 - Several API routes contain debugging logs that should be cleaned up
 - The hooks (useUserProfile, useOrganizations) have extensive error handling with console logs
-- There are references to deprecated `@supabase/auth-helpers-nextjs` package that need to be updated
 - The `src/utils/supabase/client.ts` file contains console.log statements for localStorage operations that should be removed
 - The `src/lib/supabase.ts` and `src/lib/supabase-browser.ts` files contain deprecated code that should be reviewed for potential removal
+- When cleaning up files, maintain consistent patterns across similar components and utilities
 
 ## Summary and Next Steps
 
-This plan provides a comprehensive approach to cleaning up authentication-related code in the Afino App codebase. The cleanup will be performed in a systematic manner, starting with fixing the build errors and then proceeding with the core authentication files.
+This plan provides a comprehensive approach to cleaning up authentication-related code in the Afino App codebase. The cleanup will be performed in a systematic manner, starting with the core authentication files.
 
 ### Immediate Next Steps:
 
-1. Fix the build errors by updating the files that use the deprecated `@supabase/auth-helpers-nextjs` package:
-   - `src/app/onboarding/onboarding-client.tsx`
-   - `src/app/api/organizations/join/route.ts`
-
-2. Run `npm run build` to verify that the build errors are resolved.
-
-3. Begin the systematic cleanup of the files in the checklist, starting with the core authentication files.
+1. Begin the systematic cleanup of the files in the checklist, starting with the core authentication files.
+2. For each file, review similar files first to understand established coding patterns.
+3. Maintain consistency across similar components and utilities.
 
 ### Expected Outcomes:
 
 - A clean, maintainable codebase with no console.log statements or commented-out code
 - Consistent error handling across all authentication-related files
 - No references to deprecated packages
+- Consistent coding patterns throughout the authentication system
 - All tests passing and up-to-date with the cleaned code
 - A successful build with no errors or warnings
 
@@ -189,11 +164,11 @@ As each file is reviewed and cleaned, update the checklist with [x] and incremen
 
 This authentication code cleanup plan is designed to systematically address the issues in the codebase and leave it in a clean, maintainable state. By following this plan, we will:
 
-1. Fix immediate build errors
-2. Remove unnecessary console logging
-3. Clean up commented-out code and short-term hacks
-4. Ensure consistent error handling
-5. Update deprecated package references
+1. Remove unnecessary console logging
+2. Clean up commented-out code and short-term hacks
+3. Ensure consistent error handling
+4. Update deprecated package references
+5. Maintain consistent coding patterns throughout the authentication system
 
 The end result will be a more robust, maintainable authentication system that follows best practices and is free of debugging artifacts. This will make future development easier and reduce the likelihood of authentication-related bugs.
 
