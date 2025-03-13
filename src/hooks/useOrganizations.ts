@@ -37,17 +37,13 @@ interface ApiOrganization {
 const handleOrganizationsError = (error: unknown) => {
   const message = error instanceof Error ? error.message : 'An error occurred';
   toast.error(`Error fetching organizations: ${message}`);
-  console.error('Organizations fetch error:', error);
 };
 
 /**
  * Fetches organizations data from the API
  */
 async function fetchOrganizations(userId?: string): Promise<Organization[]> {
-  console.log('[useOrganizations] Fetching organizations, user ID exists:', !!userId);
-  
   if (!userId) {
-    console.log('[useOrganizations] No user ID provided, returning empty array');
     return [];
   }
 
@@ -60,28 +56,21 @@ async function fetchOrganizations(userId?: string): Promise<Organization[]> {
         'Pragma': 'no-cache'
       },
     });
-
-    console.log('[useOrganizations] API response status:', response.status);
     
     // Check the content type of the response
     const contentType = response.headers.get('content-type') || '';
-    console.log('[useOrganizations] Response content type:', contentType);
 
     if (!response.ok) {
       // If content type is HTML, this might be a redirect to login page
       if (contentType.includes('text/html')) {
-        console.warn('[useOrganizations] Received HTML response instead of JSON, likely a redirect');
         // Instead of throwing an error, return an empty array
-        console.log('[useOrganizations] Returning empty array due to HTML response');
         return [];
       }
       
       const errorData = await response.json().catch(() => {
-        console.error('[useOrganizations] Failed to parse error response JSON');
         return { message: 'Unknown error (failed to parse response)' };
       });
       
-      console.error('[useOrganizations] Error response:', errorData);
       throw new Error(errorData.message || `API error: ${response.status}`);
     }
     
@@ -91,21 +80,16 @@ async function fetchOrganizations(userId?: string): Promise<Organization[]> {
     
     // Check if the response starts with HTML doctype or tags
     if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-      console.warn('[useOrganizations] Received HTML response instead of JSON');
       // Instead of throwing an error, return an empty array
-      console.log('[useOrganizations] Returning empty array due to HTML response');
       return [];
     }
     
     try {
       // Parse the text as JSON
       const data = JSON.parse(text);
-      console.log('[useOrganizations] Raw API response:', data);
       
       // Transform the nested organization data into the expected flat structure
       if (data.organizations && Array.isArray(data.organizations)) {
-        console.log(`[useOrganizations] Found ${data.organizations.length} organizations`);
-        
         return data.organizations.map((org: ApiOrganization) => ({
           id: org.organizationId || org.id || '',
           name: org.organization?.name || 'Unnamed Organization',
@@ -117,18 +101,13 @@ async function fetchOrganizations(userId?: string): Promise<Organization[]> {
         }));
       }
       
-      console.log('[useOrganizations] No organizations found in response');
       return [];
-    } catch (parseError) {
-      console.error('[useOrganizations] JSON parsing error:', parseError);
+    } catch {
       // Instead of throwing an error, return an empty array
-      console.log('[useOrganizations] Returning empty array due to JSON parse error');
       return [];
     }
-  } catch (error) {
-    console.error('[useOrganizations] Error during fetch:', error);
+  } catch {
     // Instead of re-throwing, return an empty array
-    console.log('[useOrganizations] Returning empty array due to fetch error');
     return [];
   }
 }
@@ -152,7 +131,6 @@ export function useOrganizations(userId?: string) {
       if (error instanceof Error && 
           (error.message.includes('Authentication required') || 
            error.message.includes('Unauthorized'))) {
-        console.log('[useOrganizations] Not retrying due to auth error:', error.message);
         return false;
       }
       // Only retry once for other errors

@@ -58,8 +58,8 @@ This document outlines a systematic approach to clean up authentication-related 
 
 ### Hooks with Authentication Logic
 
-- [ ] `src/hooks/useUserProfile.ts` - Contains extensive console logging
-- [ ] `src/hooks/useOrganizations.ts` - Contains extensive console logging
+- [x] `src/hooks/useUserProfile.ts` - Contains extensive console logging
+- [x] `src/hooks/useOrganizations.ts` - Contains extensive console logging
 
 ### Dashboard Components with Auth Dependencies
 
@@ -132,9 +132,9 @@ For each file in the checklist:
 ## Progress Tracking
 
 - Total files to review: 39
-- Files reviewed: 27
-- Files cleaned: 27
-- Completion percentage: 69.23%
+- Files reviewed: 29
+- Files cleaned: 29
+- Completion percentage: 74.36%
 
 ## Notes
 
