@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,10 +44,24 @@ interface UserOrganization {
   };
 }
 
+// Interface for the detailed profile data from /api/user/profile
+interface DetailedUserProfile {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+  jobTitle: string | null;
+  bio: string | null;
+}
+
 export default function ProfileClient() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('personal');
   const { user } = useAuth();
+  const [detailedProfile, setDetailedProfile] = useState<DetailedUserProfile | null>(null);
+  const [isDetailedProfileLoading, setIsDetailedProfileLoading] = useState(false);
 
   // Fetch profile data using React Query
   const { 
@@ -65,7 +79,30 @@ export default function ProfileClient() {
     refetch: refetchOrganizations
   } = useOrganizations(profileData?.id);
 
-  const isLoading = isProfileLoading || isOrgsLoading;
+  // Fetch detailed profile data from /api/user/profile
+  useEffect(() => {
+    if (profileData?.id) {
+      setIsDetailedProfileLoading(true);
+      fetch('/api/user/profile')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to fetch detailed profile');
+          }
+          return response.json();
+        })
+        .then(data => {
+          setDetailedProfile(data);
+        })
+        .catch(error => {
+          console.error('Error fetching detailed profile:', error);
+        })
+        .finally(() => {
+          setIsDetailedProfileLoading(false);
+        });
+    }
+  }, [profileData?.id]);
+
+  const isLoading = isProfileLoading || isOrgsLoading || isDetailedProfileLoading;
   const error = profileError || orgsError;
 
   const organizations = organizationsData || [];
@@ -117,8 +154,6 @@ export default function ProfileClient() {
               Return to Dashboard
             </Button>
             <Button onClick={() => {
-              console.log('[ProfileClient] Try Again button clicked');
-              
               // Use React Query refetch to reload data
               refetchProfile();
               if (profileData?.id) {
@@ -135,16 +170,31 @@ export default function ProfileClient() {
     );
   }
 
+  // Extract first and last name from the full name
+  let firstName = '';
+  let lastName = '';
+  
+  if (detailedProfile?.firstName && detailedProfile?.lastName) {
+    // Use the detailed profile data if available
+    firstName = detailedProfile.firstName;
+    lastName = detailedProfile.lastName;
+  } else if (profileData.name) {
+    // Split the full name into first and last name
+    const nameParts = profileData.name.split(' ');
+    firstName = nameParts[0] || '';
+    lastName = nameParts.slice(1).join(' ') || '';
+  }
+
   // Transform API response to match component props
   const formattedUserProfile: FormUserProfile = {
     id: profileData.id || '',
     email: profileData.email || '',
     name: profileData.name || null,
-    firstName: null, // Assuming these are set in the component
-    lastName: null,
+    firstName: firstName || null,
+    lastName: lastName || null,
     avatarUrl: profileData.avatar_url || null,
-    jobTitle: null,
-    bio: null
+    jobTitle: detailedProfile?.jobTitle || null,
+    bio: detailedProfile?.bio || null
   };
 
   return (
@@ -248,8 +298,8 @@ export default function ProfileClient() {
           
           <Card>
             <CardHeader>
-              <CardTitle>Account Management</CardTitle>
-              <CardDescription>Manage your account settings and data</CardDescription>
+              <CardTitle>Account Deletion</CardTitle>
+              <CardDescription>Permanently delete your account and all associated data</CardDescription>
             </CardHeader>
             <CardContent>
               <AccountDeletionSection />
