@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
+import { useAuth } from '@/providers/AuthProvider';
 
 export interface UserProfile {
   id: string;
@@ -53,7 +54,9 @@ async function fetchUserProfile(): Promise<UserProfile> {
       // If content type is HTML, this might be a redirect to login page
       if (contentType.includes('text/html')) {
         console.warn('[useUserProfile] Received HTML response instead of JSON, likely a redirect');
-        throw new Error('Authentication required - redirecting to login');
+        // Instead of throwing an error, return a default empty profile
+        console.log('[useUserProfile] Returning empty profile due to HTML response');
+        return { id: '', name: '', email: '' };
       }
       
       const errorData = await response.json().catch(() => {
@@ -65,20 +68,34 @@ async function fetchUserProfile(): Promise<UserProfile> {
       throw new Error(errorData.message || `API error: ${response.status}`);
     }
     
-    // Skip HTML check - attempt to parse as JSON regardless of content type
-    // Next.js API routes might return JSON without setting the proper content type
-
+    // Check if the response is HTML before trying to parse as JSON
+    // This prevents the "Unexpected token '<'" error
+    const text = await response.text();
+    
+    // Check if the response starts with HTML doctype or tags
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      console.warn('[useUserProfile] Received HTML response instead of JSON');
+      // Instead of throwing an error, return a default empty profile
+      console.log('[useUserProfile] Returning empty profile due to HTML response');
+      return { id: '', name: '', email: '' };
+    }
+    
     try {
-      const data = await response.json();
+      // Parse the text as JSON
+      const data = JSON.parse(text);
       console.log('[useUserProfile] Successfully fetched user profile');
       return data;
     } catch (parseError) {
       console.error('[useUserProfile] JSON parsing error:', parseError);
-      throw new Error('Failed to parse response as JSON');
+      // Instead of throwing an error, return a default empty profile
+      console.log('[useUserProfile] Returning empty profile due to JSON parse error');
+      return { id: '', name: '', email: '' };
     }
   } catch (error) {
     console.error('[useUserProfile] Error during fetch:', error);
-    throw error;
+    // Instead of re-throwing, return a default empty profile
+    console.log('[useUserProfile] Returning empty profile due to fetch error');
+    return { id: '', name: '', email: '' };
   }
 }
 
@@ -88,12 +105,25 @@ async function fetchUserProfile(): Promise<UserProfile> {
 export function useUserProfile(enabled = true) {
   // Track if error was already shown
   const errorShown = useRef(false);
+  
+  // Get authentication state
+  const { isAuthenticated } = useAuth();
 
   const query = useQuery({
     queryKey: ['userProfile'],
     queryFn: fetchUserProfile,
-    enabled,
-    retry: 1,
+    enabled: enabled && isAuthenticated, // Only run the query if authenticated
+    retry: (failureCount, error) => {
+      // Don't retry if it's an authentication error
+      if (error instanceof Error && 
+          (error.message.includes('Authentication required') || 
+           error.message.includes('Unauthorized'))) {
+        console.log('[useUserProfile] Not retrying due to auth error:', error.message);
+        return false;
+      }
+      // Only retry once for other errors
+      return failureCount < 1;
+    },
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,

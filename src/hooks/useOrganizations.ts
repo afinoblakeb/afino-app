@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useEffect, useRef } from 'react';
+import { useAuth } from '@/providers/AuthProvider';
 
 export interface Organization {
   id: string;
@@ -70,7 +71,9 @@ async function fetchOrganizations(userId?: string): Promise<Organization[]> {
       // If content type is HTML, this might be a redirect to login page
       if (contentType.includes('text/html')) {
         console.warn('[useOrganizations] Received HTML response instead of JSON, likely a redirect');
-        throw new Error('Authentication required - redirecting to login');
+        // Instead of throwing an error, return an empty array
+        console.log('[useOrganizations] Returning empty array due to HTML response');
+        return [];
       }
       
       const errorData = await response.json().catch(() => {
@@ -82,11 +85,21 @@ async function fetchOrganizations(userId?: string): Promise<Organization[]> {
       throw new Error(errorData.message || `API error: ${response.status}`);
     }
     
-    // Skip HTML check - attempt to parse as JSON regardless of content type
-    // Next.js API routes might return JSON without setting the proper content type
-
+    // Check if the response is HTML before trying to parse as JSON
+    // This prevents the "Unexpected token '<'" error
+    const text = await response.text();
+    
+    // Check if the response starts with HTML doctype or tags
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      console.warn('[useOrganizations] Received HTML response instead of JSON');
+      // Instead of throwing an error, return an empty array
+      console.log('[useOrganizations] Returning empty array due to HTML response');
+      return [];
+    }
+    
     try {
-      const data = await response.json();
+      // Parse the text as JSON
+      const data = JSON.parse(text);
       console.log('[useOrganizations] Raw API response:', data);
       
       // Transform the nested organization data into the expected flat structure
@@ -108,11 +121,15 @@ async function fetchOrganizations(userId?: string): Promise<Organization[]> {
       return [];
     } catch (parseError) {
       console.error('[useOrganizations] JSON parsing error:', parseError);
-      throw new Error('Failed to parse response as JSON');
+      // Instead of throwing an error, return an empty array
+      console.log('[useOrganizations] Returning empty array due to JSON parse error');
+      return [];
     }
   } catch (error) {
     console.error('[useOrganizations] Error during fetch:', error);
-    throw error;
+    // Instead of re-throwing, return an empty array
+    console.log('[useOrganizations] Returning empty array due to fetch error');
+    return [];
   }
 }
 
@@ -122,12 +139,25 @@ async function fetchOrganizations(userId?: string): Promise<Organization[]> {
 export function useOrganizations(userId?: string) {
   // Track if error was already shown
   const errorShown = useRef(false);
+  
+  // Get authentication state
+  const { isAuthenticated } = useAuth();
 
   const query = useQuery({
     queryKey: ['organizations', userId],
     queryFn: () => fetchOrganizations(userId),
-    enabled: !!userId,
-    retry: 1,
+    enabled: !!userId && isAuthenticated, // Only run the query if authenticated and userId exists
+    retry: (failureCount, error) => {
+      // Don't retry if it's an authentication error
+      if (error instanceof Error && 
+          (error.message.includes('Authentication required') || 
+           error.message.includes('Unauthorized'))) {
+        console.log('[useOrganizations] Not retrying due to auth error:', error.message);
+        return false;
+      }
+      // Only retry once for other errors
+      return failureCount < 1;
+    },
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,

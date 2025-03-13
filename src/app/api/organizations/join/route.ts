@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
+
 import { addUserToOrganization, getOrganizationById } from '@/services/organizationService';
 import { getOrCreateMemberRoleForOrganization } from '@/services/roleService';
 
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     }
     
     // Get the current user
-    const supabase = createClientComponentClient();
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {

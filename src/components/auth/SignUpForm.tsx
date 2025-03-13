@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { getRedirectUrl } from '@/utils/auth/redirects';
 
 // Form validation schema
 const signUpSchema = z.object({
@@ -46,9 +47,8 @@ export default function SignUpForm() {
     setFormSuccess(null);
 
     try {
-      // Get the current URL for the redirect
-      const origin = window.location.origin;
-      const redirectTo = `${origin}/auth/verify`;
+      // Use our dynamic redirect URL utility
+      const redirectTo = getRedirectUrl('/auth/verify');
 
       // Sign up with Supabase
       const { data: userData, error } = await supabase.auth.signUp({

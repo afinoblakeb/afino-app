@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { createBrowserSupabaseClient } from '@/utils/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
+import { customStorageAdapter } from '@/utils/supabase/client';
 
 // Form validation schema
 const signInSchema = z.object({
@@ -19,9 +20,9 @@ type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [showEmailForm, setShowEmailForm] = useState(false);
 
@@ -37,6 +38,14 @@ export default function SignInForm() {
     },
   });
 
+  // Check for error parameter in URL
+  useEffect(() => {
+    const errorParam = searchParams?.get('error');
+    if (errorParam) {
+      setFormError(decodeURIComponent(errorParam));
+    }
+  }, [searchParams]);
+
   // Check if already authenticated
   if (user) {
     router.push('/dashboard');
@@ -44,68 +53,137 @@ export default function SignInForm() {
   }
 
   const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
+    setIsLoading(true);
     setFormError(null);
 
     try {
-      console.log('[SignInForm] Starting Google sign-in process');
+      // Control logging in the sign-in form
+      const enableSignInLogging = true; // Set to true when debugging auth issues
       
-      // Log if any auth params are in the URL already
-      const currentUrl = new URL(window.location.href);
-      if (currentUrl.searchParams.has('error')) {
-        console.log('[SignInForm] URL contains error parameter:', currentUrl.searchParams.get('error'));
+      if (enableSignInLogging) {
+        console.log('[SignInForm] Starting Google sign-in process');
+        
+        // Log if any auth params are in the URL already
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.has('error')) {
+          console.log('[SignInForm] URL contains error parameter:', currentUrl.searchParams.get('error'));
+        }
       }
-      
-      // Create a fresh Supabase client for this auth request
-      const supabase = createBrowserSupabaseClient();
       
       // Get the next URL from the query parameters if available
       const urlParams = new URLSearchParams(window.location.search);
       const nextUrl = urlParams.get('next') || '/dashboard';
-      console.log(`[SignInForm] Next URL for redirect: ${nextUrl}`);
-      
-      // IMPORTANT: Do NOT clear localStorage items - they are needed for PKCE flow
-      
-      // Debug: check localStorage state before auth
-      console.log('[SignInForm] Checking localStorage state before auth');
-      try {
-        // Safe way to list localStorage items (in case of access restrictions)
-        const lsItems = Object.keys(localStorage).filter(key => 
-          key.startsWith('sb-') || key.includes('supabase')
-        );
-        console.log(`[SignInForm] Found ${lsItems.length} Supabase-related localStorage items`);
-        lsItems.forEach(key => console.log(`  ${key}`));
-      } catch (e) {
-        console.error('[SignInForm] Error accessing localStorage:', e);
+      if (enableSignInLogging) {
+        console.log(`[SignInForm] Next URL for redirect: ${nextUrl}`);
       }
       
-      // Set this flag early in case we need to show the error before redirect completes
-      setIsGoogleLoading(true);
+      // Store the next path in customStorageAdapter for retrieval after callback
+      try {
+        customStorageAdapter.setItem('auth_next_path', nextUrl);
+        if (enableSignInLogging) {
+          console.log(`[SignInForm] Stored next path in customStorageAdapter: ${nextUrl}`);
+        }
+      } catch (e) {
+        console.error('[SignInForm] Error storing next path in customStorageAdapter:', e);
+      }
+      
+      // Use the singleton Supabase client
+      const supabase = createClient();
+      
+      // Use the absolute URL for the callback to ensure it matches what's registered in Google
+      const callbackUrl = `${window.location.origin}/auth/callback`;
+      if (enableSignInLogging) {
+        console.log(`[SignInForm] Using absolute callback URL: ${callbackUrl}`);
+      }
       
       // Sign in with Google using PKCE flow
-      console.log('[SignInForm] Initiating OAuth sign-in with Google');
-      const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`;
-      console.log(`[SignInForm] Redirect URL: ${redirectUrl}`);
+      if (enableSignInLogging) {
+        console.log('[SignInForm] Initiating OAuth sign-in with Google using PKCE flow');
+      }
+      
+      // Simplified Google sign-in with minimal options
+      try {
+        customStorageAdapter.setItem('pkce_test', 'test');
+        console.log('[SignInForm] customStorageAdapter test successful:', customStorageAdapter.getItem('pkce_test'));
+        customStorageAdapter.removeItem('pkce_test');
+      } catch (e) {
+        console.error('[SignInForm] customStorageAdapter test failed:', e);
+      }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: false, // Let Supabase handle the redirect automatically
-        },
+          redirectTo: callbackUrl,
+          // flowType: 'pkce'
+        }
       });
+
+      console.log('[SignInForm] customStorageAdapter keys after OAuth initiation:', Object.keys(customStorageAdapter));
+
+      const pkceKey = 'supabase.auth.token-code-verifier';
+      const pkceVerifier = customStorageAdapter.getItem(pkceKey);
+
+      if (pkceVerifier) {
+        console.log('[SignInForm] PKCE key found:', pkceKey);
+      } else {
+        console.warn('[SignInForm] No PKCE key found after OAuth initiation');
+      }
 
       if (error) {
         console.error('[SignInForm] Google sign-in error:', error);
         setFormError(error.message);
-        setIsGoogleLoading(false);
+        setIsLoading(false);
         return;
       }
       
       // Log the OAuth URL if available
       if (data?.url) {
-        console.log('[SignInForm] OAuth URL provided:', data.url.substring(0, 100) + '...');
-      } else {
+        if (enableSignInLogging) {
+          console.log('[SignInForm] OAuth URL provided:', data.url.substring(0, 100) + '...');
+          console.log('[SignInForm] Full OAuth data:', JSON.stringify(data, null, 2));
+        }
+        
+        // Log customStorageAdapter state after OAuth initiation
+        if (enableSignInLogging && typeof window !== 'undefined') {
+          const customStorageAdapterKeys = Object.keys(customStorageAdapter);
+          console.log('[SignInForm] Current customStorageAdapter keys after OAuth initiation:', customStorageAdapterKeys);
+          
+          // Check for any PKCE verifiers
+          const pkceKeys = customStorageAdapterKeys.filter(key => 
+            key.includes('code_verifier') || 
+            (key.includes('supabase') && key.includes('token'))
+          );
+          
+          if (pkceKeys.length > 0) {
+            console.log('[SignInForm] Found potential PKCE keys:', pkceKeys);
+            
+            // Log the keys in more detail (without exposing sensitive values)
+            pkceKeys.forEach(key => {
+              try {
+                const value = customStorageAdapter.getItem(key);
+                if (value) {
+                  // Try to parse as JSON to see structure
+                  try {
+                    const parsed = JSON.parse(value);
+                    console.log(`[SignInForm] Key ${key} contains:`, 
+                      Object.keys(parsed).map(k => k === 'code_verifier' ? 
+                        `${k}: ${parsed[k] ? '[PRESENT]' : '[MISSING]'}` : 
+                        k).join(', ')
+                    );
+                  } catch {
+                    // Not JSON, just log that it exists
+                    console.log(`[SignInForm] Key ${key} exists with length: ${value.length}`);
+                  }
+                }
+              } catch (e) {
+                console.error(`[SignInForm] Error reading key ${key}:`, e);
+              }
+            });
+          } else {
+            console.log('[SignInForm] No PKCE keys found in customStorageAdapter');
+          }
+        }
+      } else if (enableSignInLogging) {
         console.log('[SignInForm] No OAuth URL was returned from signInWithOAuth');
       }
       
@@ -113,7 +191,7 @@ export default function SignInForm() {
       // something is wrong with the Supabase client configuration
       const redirectTimeout = setTimeout(() => {
         console.error('[SignInForm] No redirect occurred within expected timeframe');
-        setIsGoogleLoading(false);
+        setIsLoading(false);
         setFormError('Authentication initiated but redirect failed. Please try again.');
       }, 3000);
       
@@ -122,7 +200,7 @@ export default function SignInForm() {
     } catch (error) {
       console.error('[SignInForm] Unexpected error during Google sign-in:', error);
       setFormError(`Authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setIsGoogleLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -131,8 +209,14 @@ export default function SignInForm() {
     setFormError(null);
 
     try {
-      console.log('[SignInForm] Starting email sign-in process');
-      const supabase = createBrowserSupabaseClient();
+      // Control logging in the sign-in form
+      const enableSignInLogging = true; // Set to true when debugging auth issues
+      
+      if (enableSignInLogging) {
+        console.log('[SignInForm] Starting email sign-in process');
+      }
+      
+      const supabase = createClient();
       
       // Sign in with email and password
       const { error } = await supabase.auth.signInWithPassword({
@@ -147,7 +231,9 @@ export default function SignInForm() {
         return;
       }
 
-      console.log('[SignInForm] Email sign-in successful');
+      if (enableSignInLogging) {
+        console.log('[SignInForm] Email sign-in successful');
+      }
       
       // Get the next URL from the query parameters if available
       const urlParams = new URLSearchParams(window.location.search);
@@ -155,7 +241,10 @@ export default function SignInForm() {
       
       // No need to manually redirect, the middleware will handle it
       // Just refresh the router to trigger the middleware
-      console.log('[SignInForm] Triggering router refresh for middleware redirect');
+      if (enableSignInLogging) {
+        console.log('[SignInForm] Triggering router refresh for middleware redirect');
+      }
+      
       router.refresh();
       
       // As a fallback, also push to the next URL
@@ -187,10 +276,10 @@ export default function SignInForm() {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            disabled={isGoogleLoading}
+            disabled={isLoading}
             className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            {isGoogleLoading ? (
+            {isLoading ? (
               <span className="flex items-center">
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

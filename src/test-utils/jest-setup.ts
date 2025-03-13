@@ -14,8 +14,8 @@ afterEach(() => server.resetHandlers());
 // Clean up after the tests are finished
 afterAll(() => server.close());
 
-// Mock the localStorage and sessionStorage for tests
-class LocalStorageMock implements Storage {
+// Mock the customStorageAdapter and sessionStorage for tests
+class customStorageAdapterMock implements Storage {
   store: Record<string, string>;
   length: number;
   
@@ -48,8 +48,8 @@ class LocalStorageMock implements Storage {
   }
 }
 
-global.localStorage = new LocalStorageMock();
-global.sessionStorage = new LocalStorageMock();
+global.customStorageAdapter = new customStorageAdapterMock();
+global.sessionStorage = new customStorageAdapterMock();
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

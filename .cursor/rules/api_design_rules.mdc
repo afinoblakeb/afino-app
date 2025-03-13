@@ -36,7 +36,7 @@ src/app/api/
 │       └── route.ts             # GET, PUT, DELETE /api/users/:id
 └── auth/
     ├── login/
-    │   └── route.ts             # POST /api/auth/login
+    │   └── route.ts             # POST /api/auth/signin
     └── register/
         └── route.ts             # POST /api/auth/register
 ```

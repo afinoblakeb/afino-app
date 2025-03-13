@@ -147,6 +147,29 @@ See [project-docs/cursorrules/workflows/development_workflow.md](project-docs/cu
 
 See [project-docs/cursorrules/guidelines/testing_strategy.md](project-docs/cursorrules/guidelines/testing_strategy.md) for detailed testing guidelines.
 
+## Environment Variables
+
+Create a `.env.local` file in the root of your project with the following variables:
+
+```
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://sjclvcrtuqtdwtupizxd.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+
+# Site URL for local development
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+For production deployment on Vercel, add these environment variables in your Vercel project settings:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://sjclvcrtuqtdwtupizxd.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_SITE_URL=https://afino-app.vercel.app
+```
+
+See [Authentication Redirect URL Setup](docs/auth-redirect-setup.md) for more details on configuring dynamic redirect URLs.
+
 ## License
 
 [MIT](LICENSE) 

@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { createBrowserSupabaseClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useAuth } from '@/providers/AuthProvider';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isLoggingOut } = useAuth();
   
   // Check if user is authenticated
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function DashboardPage() {
         // Create a Supabase client for browser environment
         // The client will automatically handle code exchange if there's a code in the URL
         // This is configured in the client setup with detectSessionInUrl: true
-        const supabase = createBrowserSupabaseClient();
+        const supabase = createClient();
         
         // Check if user is authenticated
         const { data: { user }, error: getUserError } = await supabase.auth.getUser();
@@ -33,12 +35,10 @@ export default function DashboardPage() {
         }
         
         if (!user) {
-          console.log('[Dashboard] No authenticated user found, redirecting to sign-in');
           router.push('/auth/signin');
           return;
         }
-        
-        console.log('[Dashboard] Authenticated user found:', user.id);
+ 
         
       } catch (error) {
         console.error('[Dashboard] Error checking authentication:', error);
@@ -48,8 +48,11 @@ export default function DashboardPage() {
       }
     }
     
-    checkAuth();
-  }, [router]);
+    // Only check auth if not in the process of logging out
+    if (!isLoggingOut) {
+      checkAuth();
+    }
+  }, [router, isLoggingOut]);
 
   if (loading) {
     return (
@@ -68,7 +71,8 @@ export default function DashboardPage() {
         </p>
       </div>
       
-      {error && (
+      {/* Only show error if not logging out */}
+      {error && !isLoggingOut && (
         <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
           {error}
         </div>

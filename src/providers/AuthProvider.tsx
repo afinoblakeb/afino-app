@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { createBrowserSupabaseClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -11,6 +11,8 @@ type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
+  isAuthenticated: boolean;
+  isLoggingOut: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,13 +21,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
   
   // Create a Supabase client for browser environment
   // Unlike before, we don't need a useRef because we're using a function to get a fresh client
   // This ensures we always have the latest configuration
-  const getSupabase = () => createBrowserSupabaseClient();
+  const getSupabase = () => createClient();
   
   useEffect(() => {
     console.log('[AuthProvider] Initial session check');
@@ -40,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error('[AuthProvider] Session check error:', error);
+          setIsAuthenticated(false);
           return;
         }
         
@@ -52,8 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setSession(data.session);
         setUser(data.session?.user || null);
+        setIsAuthenticated(!!data.session);
       } catch (error) {
         console.error('[AuthProvider] Error checking session:', error);
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
@@ -80,19 +87,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Clear auth state on sign out
           setSession(null);
           setUser(null);
+          setIsAuthenticated(false);
+          
+          // Clear all queries on sign out
+          console.log('[AuthProvider] Clearing query cache on sign out');
+          queryClient.clear();
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           // Update session state for these events
           setSession(currentSession);
           setUser(currentSession?.user || null);
+          setIsAuthenticated(!!currentSession);
+          
+          // Invalidate queries on sign in to refresh data
+          if (event === 'SIGNED_IN') {
+            console.log('[AuthProvider] Invalidating queries on sign in');
+            queryClient.invalidateQueries();
+          }
         }
         
         setIsLoading(false);
-        
-        // Invalidate all queries to refetch data with new auth state
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-          console.log('[AuthProvider] Invalidating queries due to auth state change:', event);
-          queryClient.invalidateQueries();
-        }
       }
     );
 
@@ -105,33 +118,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     console.log('[AuthProvider] Sign out initiated');
-    setIsLoading(true);
+    
+    // Set logging out state to true immediately
+    setIsLoggingOut(true);
     
     try {
-      const supabase = getSupabase();
-      console.log('[AuthProvider] Calling Supabase signOut method');
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('[AuthProvider] Error during sign out:', error);
-        throw error;
-      }
-      
-      console.log('[AuthProvider] Supabase sign out successful');
-      
-      // Clear React Query cache on logout
-      console.log('[AuthProvider] Clearing query cache');
-      queryClient.clear();
-      
-      // State is updated by onAuthStateChange listener
-      
-      // Let the middleware handle the redirect
-      console.log('[AuthProvider] Refreshing router to trigger middleware redirect');
-      router.refresh();
+      // Simply redirect to the logout page
+      // The actual logout process will be handled there
+      console.log('[AuthProvider] Redirecting to logout page');
+      router.push('/logout');
     } catch (error) {
-      console.error('[AuthProvider] Error signing out:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('[AuthProvider] Error during sign out redirect:', error);
+      // If there's an error with the redirect, reset the logging out state
+      setIsLoggingOut(false);
     }
   };
 
@@ -140,6 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     isLoading,
     signOut,
+    isAuthenticated,
+    isLoggingOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

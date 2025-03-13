@@ -1,36 +1,36 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr';
 
-/**
- * Creates a Supabase client for browser environments with appropriate settings
- * for reliable authentication flow
- */
-export function createBrowserSupabaseClient() {
+export const customStorageAdapter = {
+  getItem: (key: string) => {
+    if (typeof window === 'undefined') return null;
+    console.log('getItem', key, globalThis.localStorage.getItem(key));
+    return globalThis.localStorage.getItem(key);
+  },
+  setItem: (key: string, value: string) => {
+    if (typeof window !== 'undefined') {
+      console.log('setItem', key, value, globalThis.localStorage.setItem(key, value));
+      globalThis.localStorage.setItem(key, value);
+    }
+  },
+  removeItem: (key: string) => {
+    if (typeof window !== 'undefined') {
+      console.log('removeItem', key, globalThis.localStorage.removeItem(key));
+      globalThis.localStorage.removeItem(key);
+    }
+  },
+};
+
+export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
         flowType: 'pkce',
-        // Enable auto-detection of the auth code in URL for seamless code exchange
         detectSessionInUrl: true,
-        // Persist the session in cookies (default)
         persistSession: true,
-        // Debug mode in development
-        debug: process.env.NODE_ENV === 'development',
-        // Don't customize storage - let Supabase handle it properly
-      },
-      // Global fetch options if needed
-      global: {
-        fetch: undefined, // Use default fetch
+        storage: customStorageAdapter,
       },
     }
-  )
+  );
 }
-
-/**
- * Legacy function for backward compatibility
- * @deprecated Use createBrowserSupabaseClient instead
- */
-export function createClient() {
-  return createBrowserSupabaseClient()
-} 
