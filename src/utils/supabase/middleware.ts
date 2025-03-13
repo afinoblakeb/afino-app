@@ -1,6 +1,16 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+/**
+ * Updates the session and handles route protection for the application.
+ * This middleware function:
+ * 1. Creates a Supabase server client with the request cookies
+ * 2. Checks if the user is authenticated
+ * 3. Redirects users based on authentication status and requested route
+ * 
+ * @param request - The incoming Next.js request
+ * @returns NextResponse with appropriate redirects or the original response
+ */
 export async function updateSession(request: NextRequest) {
   // Special case for auth callback and logout
   if (request.nextUrl.pathname === '/auth/callback' || 
