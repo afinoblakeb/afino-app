@@ -18,6 +18,11 @@ const signInSchema = z.object({
 
 type SignInFormValues = z.infer<typeof signInSchema>;
 
+/**
+ * SignInForm component provides authentication options for users.
+ * It supports both Google OAuth and email/password authentication methods.
+ * The component handles form validation, authentication state, and redirects.
+ */
 export default function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,39 +57,25 @@ export default function SignInForm() {
     return null;
   }
 
+  /**
+   * Handles Google OAuth sign-in process
+   */
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setFormError(null);
 
     try {
-      // Control logging in the sign-in form
-      const enableSignInLogging = true; // Set to true when debugging auth issues
-      
-      if (enableSignInLogging) {
-        console.log('[SignInForm] Starting Google sign-in process');
-        
-        // Log if any auth params are in the URL already
-        const currentUrl = new URL(window.location.href);
-        if (currentUrl.searchParams.has('error')) {
-          console.log('[SignInForm] URL contains error parameter:', currentUrl.searchParams.get('error'));
-        }
-      }
-      
       // Get the next URL from the query parameters if available
       const urlParams = new URLSearchParams(window.location.search);
       const nextUrl = urlParams.get('next') || '/dashboard';
-      if (enableSignInLogging) {
-        console.log(`[SignInForm] Next URL for redirect: ${nextUrl}`);
-      }
       
       // Store the next path in customStorageAdapter for retrieval after callback
       try {
         customStorageAdapter.setItem('auth_next_path', nextUrl);
-        if (enableSignInLogging) {
-          console.log(`[SignInForm] Stored next path in customStorageAdapter: ${nextUrl}`);
-        }
-      } catch (e) {
-        console.error('[SignInForm] Error storing next path in customStorageAdapter:', e);
+      } catch {
+        setFormError('Error preparing authentication. Please try again.');
+        setIsLoading(false);
+        return;
       }
       
       // Use the singleton Supabase client
@@ -92,105 +83,24 @@ export default function SignInForm() {
       
       // Use the absolute URL for the callback to ensure it matches what's registered in Google
       const callbackUrl = `${window.location.origin}/auth/callback`;
-      if (enableSignInLogging) {
-        console.log(`[SignInForm] Using absolute callback URL: ${callbackUrl}`);
-      }
       
       // Sign in with Google using PKCE flow
-      if (enableSignInLogging) {
-        console.log('[SignInForm] Initiating OAuth sign-in with Google using PKCE flow');
-      }
-      
-      // Simplified Google sign-in with minimal options
-      try {
-        customStorageAdapter.setItem('pkce_test', 'test');
-        console.log('[SignInForm] customStorageAdapter test successful:', customStorageAdapter.getItem('pkce_test'));
-        customStorageAdapter.removeItem('pkce_test');
-      } catch (e) {
-        console.error('[SignInForm] customStorageAdapter test failed:', e);
-      }
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: callbackUrl,
-          // flowType: 'pkce'
         }
       });
 
-      console.log('[SignInForm] customStorageAdapter keys after OAuth initiation:', Object.keys(customStorageAdapter));
-
-      const pkceKey = 'supabase.auth.token-code-verifier';
-      const pkceVerifier = customStorageAdapter.getItem(pkceKey);
-
-      if (pkceVerifier) {
-        console.log('[SignInForm] PKCE key found:', pkceKey);
-      } else {
-        console.warn('[SignInForm] No PKCE key found after OAuth initiation');
-      }
-
       if (error) {
-        console.error('[SignInForm] Google sign-in error:', error);
         setFormError(error.message);
         setIsLoading(false);
         return;
       }
       
-      // Log the OAuth URL if available
-      if (data?.url) {
-        if (enableSignInLogging) {
-          console.log('[SignInForm] OAuth URL provided:', data.url.substring(0, 100) + '...');
-          console.log('[SignInForm] Full OAuth data:', JSON.stringify(data, null, 2));
-        }
-        
-        // Log customStorageAdapter state after OAuth initiation
-        if (enableSignInLogging && typeof window !== 'undefined') {
-          const customStorageAdapterKeys = Object.keys(customStorageAdapter);
-          console.log('[SignInForm] Current customStorageAdapter keys after OAuth initiation:', customStorageAdapterKeys);
-          
-          // Check for any PKCE verifiers
-          const pkceKeys = customStorageAdapterKeys.filter(key => 
-            key.includes('code_verifier') || 
-            (key.includes('supabase') && key.includes('token'))
-          );
-          
-          if (pkceKeys.length > 0) {
-            console.log('[SignInForm] Found potential PKCE keys:', pkceKeys);
-            
-            // Log the keys in more detail (without exposing sensitive values)
-            pkceKeys.forEach(key => {
-              try {
-                const value = customStorageAdapter.getItem(key);
-                if (value) {
-                  // Try to parse as JSON to see structure
-                  try {
-                    const parsed = JSON.parse(value);
-                    console.log(`[SignInForm] Key ${key} contains:`, 
-                      Object.keys(parsed).map(k => k === 'code_verifier' ? 
-                        `${k}: ${parsed[k] ? '[PRESENT]' : '[MISSING]'}` : 
-                        k).join(', ')
-                    );
-                  } catch {
-                    // Not JSON, just log that it exists
-                    console.log(`[SignInForm] Key ${key} exists with length: ${value.length}`);
-                  }
-                }
-              } catch (e) {
-                console.error(`[SignInForm] Error reading key ${key}:`, e);
-              }
-            });
-          } else {
-            console.log('[SignInForm] No PKCE keys found in customStorageAdapter');
-          }
-        }
-      } else if (enableSignInLogging) {
-        console.log('[SignInForm] No OAuth URL was returned from signInWithOAuth');
-      }
-      
       // If we get here and there's no redirect happening,
       // something is wrong with the Supabase client configuration
       const redirectTimeout = setTimeout(() => {
-        console.error('[SignInForm] No redirect occurred within expected timeframe');
         setIsLoading(false);
         setFormError('Authentication initiated but redirect failed. Please try again.');
       }, 3000);
@@ -198,24 +108,20 @@ export default function SignInForm() {
       // Cleanup function to cancel the timeout if component unmounts
       return () => clearTimeout(redirectTimeout);
     } catch (error) {
-      console.error('[SignInForm] Unexpected error during Google sign-in:', error);
       setFormError(`Authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsLoading(false);
     }
   };
 
+  /**
+   * Handles email/password sign-in process
+   * @param data - Form data containing email and password
+   */
   const onSubmit = async (data: SignInFormValues) => {
     setIsLoading(true);
     setFormError(null);
 
     try {
-      // Control logging in the sign-in form
-      const enableSignInLogging = true; // Set to true when debugging auth issues
-      
-      if (enableSignInLogging) {
-        console.log('[SignInForm] Starting email sign-in process');
-      }
-      
       const supabase = createClient();
       
       // Sign in with email and password
@@ -225,14 +131,9 @@ export default function SignInForm() {
       });
 
       if (error) {
-        console.error('[SignInForm] Email sign-in error:', error);
         setFormError(error.message);
         setIsLoading(false);
         return;
-      }
-
-      if (enableSignInLogging) {
-        console.log('[SignInForm] Email sign-in successful');
       }
       
       // Get the next URL from the query parameters if available
@@ -241,18 +142,13 @@ export default function SignInForm() {
       
       // No need to manually redirect, the middleware will handle it
       // Just refresh the router to trigger the middleware
-      if (enableSignInLogging) {
-        console.log('[SignInForm] Triggering router refresh for middleware redirect');
-      }
-      
       router.refresh();
       
       // As a fallback, also push to the next URL
       setTimeout(() => {
         router.push(nextUrl);
       }, 500);
-    } catch (error) {
-      console.error('[SignInForm] Unexpected error during email sign-in:', error);
+    } catch {
       setFormError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }
