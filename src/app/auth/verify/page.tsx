@@ -4,12 +4,18 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+/**
+ * VerifyPage component handles email verification confirmation.
+ * It checks URL parameters to determine verification status and displays
+ * appropriate feedback to the user (loading, success, or error).
+ * On successful verification, it automatically redirects to the sign-in page.
+ */
 export default function VerifyPage() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
   useEffect(() => {
-    // Check if the URL contains a success parameter
+    // Check if the URL contains an error parameter
     const url = new URL(window.location.href);
     const error = url.searchParams.get('error');
     
