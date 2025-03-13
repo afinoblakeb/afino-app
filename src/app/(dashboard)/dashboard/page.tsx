@@ -7,6 +7,10 @@ import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/providers/AuthProvider';
 
+/**
+ * DashboardPage component displays the main dashboard for authenticated users
+ * It verifies authentication and displays dashboard content or redirects to sign-in
+ */
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -28,7 +32,6 @@ export default function DashboardPage() {
         const { data: { user }, error: getUserError } = await supabase.auth.getUser();
         
         if (getUserError) {
-          console.error('[Dashboard] Error getting user:', getUserError);
           setError('Authentication error: ' + getUserError.message);
           setLoading(false);
           return;
@@ -40,8 +43,7 @@ export default function DashboardPage() {
         }
  
         
-      } catch (error) {
-        console.error('[Dashboard] Error checking authentication:', error);
+      } catch {
         setError('Authentication error');
       } finally {
         setLoading(false);

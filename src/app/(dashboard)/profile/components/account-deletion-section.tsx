@@ -43,6 +43,10 @@ const confirmDeletionSchema = z.object({
 
 type ConfirmDeletionValues = z.infer<typeof confirmDeletionSchema>;
 
+/**
+ * AccountDeletionSection component provides a UI for users to delete their account
+ * It includes a confirmation dialog with a text input to prevent accidental deletion
+ */
 export function AccountDeletionSection() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -60,7 +64,10 @@ export function AccountDeletionSection() {
   // Only allow submission when the text is exactly "DELETE"
   const canSubmit = form.watch('confirmText') === 'DELETE';
   
-  // Handle account deletion
+  /**
+   * Handles the account deletion process
+   * Makes an API call to delete the user's account and redirects to sign-in page on success
+   */
   const onSubmit = async () => {
     try {
       setIsDeleting(true);
@@ -80,10 +87,9 @@ export function AccountDeletionSection() {
       
       // Redirect to sign-in page after a short delay
       setTimeout(() => {
-        router.push('/signin');
+        router.push('auth/signin');
       }, 2000);
     } catch (error) {
-      console.error('Error deleting account:', error);
       setIsDeleting(false);
       setIsDialogOpen(false);
       

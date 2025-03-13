@@ -13,12 +13,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
+/**
+ * Interface for organization data
+ */
 interface Organization {
   id: string;
   name: string;
   domain: string | null;
 }
 
+/**
+ * OnboardingClient component handles the user onboarding flow
+ * It allows users to create a new organization or join an existing one
+ * based on their email domain
+ */
 export default function OnboardingClient() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +38,10 @@ export default function OnboardingClient() {
   const supabase = createClient();
 
   useEffect(() => {
+    /**
+     * Fetches the current user and checks for existing organizations
+     * with the same domain as the user's email
+     */
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -55,8 +67,8 @@ export default function OnboardingClient() {
               // Suggest organization name based on domain
               setOrganizationName(suggestOrganizationName(domain));
             }
-          } catch (error) {
-            console.error('Error checking organization:', error);
+          } catch {
+            // Silent fail - default to create organization flow
           }
         }
       }
@@ -67,6 +79,10 @@ export default function OnboardingClient() {
     getUser();
   }, [router, supabase]);
 
+  /**
+   * Handles the creation of a new organization
+   * @param e - Form submission event
+   */
   const handleCreateOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -91,12 +107,15 @@ export default function OnboardingClient() {
       
       // Redirect to dashboard
       router.push('/dashboard');
-    } catch (error) {
-      console.error('Error creating organization:', error);
+    } catch {
+      // Error state handled by UI
       setSubmitting(false);
     }
   };
 
+  /**
+   * Handles joining an existing organization
+   */
   const handleJoinOrganization = async () => {
     setSubmitting(true);
     
@@ -117,12 +136,15 @@ export default function OnboardingClient() {
       
       // Redirect to dashboard
       router.push('/dashboard');
-    } catch (error) {
-      console.error('Error joining organization:', error);
+    } catch {
+      // Error state handled by UI
       setSubmitting(false);
     }
   };
 
+  /**
+   * Handles skipping the organization setup
+   */
   const handleSkip = () => {
     router.push('/dashboard');
   };

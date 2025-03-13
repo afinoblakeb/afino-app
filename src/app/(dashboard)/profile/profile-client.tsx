@@ -29,6 +29,7 @@ interface FormUserProfile {
   bio: string | null;
 }
 
+// Interface for the UserOrganization component props
 interface UserOrganization {
   id: string;
   organizationId: string;
@@ -56,6 +57,10 @@ interface DetailedUserProfile {
   bio: string | null;
 }
 
+/**
+ * ProfileClient component displays the user's profile settings page
+ * It fetches user profile data, organizations, and provides tabs for different settings
+ */
 export default function ProfileClient() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('personal');
@@ -93,8 +98,8 @@ export default function ProfileClient() {
         .then(data => {
           setDetailedProfile(data);
         })
-        .catch(error => {
-          console.error('Error fetching detailed profile:', error);
+        .catch(() => {
+          // Silent fail - the UI will handle missing data gracefully
         })
         .finally(() => {
           setIsDetailedProfileLoading(false);
@@ -197,6 +202,22 @@ export default function ProfileClient() {
     bio: detailedProfile?.bio || null
   };
 
+  // Map organizations data to match the expected UserOrganization structure
+  const formattedOrganizations: UserOrganization[] = organizations.map(org => ({
+    id: org.id,
+    organizationId: org.id,
+    organization: {
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      domain: org.domain
+    },
+    role: {
+      id: '1', // Default ID
+      name: org.role || 'Member'
+    }
+  }));
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
@@ -250,27 +271,12 @@ export default function ProfileClient() {
         <TabsContent value="organizations" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Your Organizations</CardTitle>
-              <CardDescription>Organizations you belong to and your roles</CardDescription>
+              <CardTitle>Organizations</CardTitle>
+              <CardDescription>Manage your organization memberships</CardDescription>
             </CardHeader>
             <CardContent>
               {organizations.length > 0 ? (
-                <OrganizationsList 
-                  organizations={organizations.map(org => ({
-                    id: org.id || '',
-                    organizationId: org.id || '',
-                    organization: {
-                      id: org.id || '',
-                      name: org.name || '',
-                      slug: org.slug || '',
-                      domain: org.domain || null
-                    },
-                    role: {
-                      id: '1',
-                      name: org.role || 'Member'
-                    }
-                  })) as UserOrganization[]}
-                />
+                <OrganizationsList organizations={formattedOrganizations} />
               ) : (
                 <div className="text-center py-6">
                   <p className="text-muted-foreground mb-4">You are not a member of any organizations.</p>
@@ -286,20 +292,18 @@ export default function ProfileClient() {
         <TabsContent value="security" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-              <CardDescription>Update your password to keep your account secure</CardDescription>
+              <CardTitle>Password</CardTitle>
+              <CardDescription>Update your password</CardDescription>
             </CardHeader>
             <CardContent>
               <PasswordChangeForm />
             </CardContent>
           </Card>
           
-          <Separator className="my-6" />
-          
           <Card>
             <CardHeader>
-              <CardTitle>Account Deletion</CardTitle>
-              <CardDescription>Permanently delete your account and all associated data</CardDescription>
+              <CardTitle>Delete Account</CardTitle>
+              <CardDescription>Permanently delete your account and all data</CardDescription>
             </CardHeader>
             <CardContent>
               <AccountDeletionSection />

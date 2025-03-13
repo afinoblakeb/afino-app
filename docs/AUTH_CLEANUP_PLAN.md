@@ -63,10 +63,10 @@ This document outlines a systematic approach to clean up authentication-related 
 
 ### Dashboard Components with Auth Dependencies
 
-- [ ] `src/app/(dashboard)/profile/profile-client.tsx` - Contains console logging
-- [ ] `src/app/(dashboard)/profile/components/account-deletion-section.tsx` - Check for auth-related code
-- [ ] `src/app/(dashboard)/dashboard/page.tsx` - Contains auth-related comments
-- [ ] `src/app/onboarding/onboarding-client.tsx` - Contains reference to deprecated `@supabase/auth-helpers-nextjs`
+- [x] `src/app/(dashboard)/profile/profile-client.tsx` - Contains console logging
+- [x] `src/app/(dashboard)/profile/components/account-deletion-section.tsx` - Check for auth-related code
+- [x] `src/app/(dashboard)/dashboard/page.tsx` - Contains auth-related comments
+- [x] `src/app/onboarding/onboarding-client.tsx` - Contains reference to deprecated `@supabase/auth-helpers-nextjs`
 
 ## Testing Files
 
@@ -132,9 +132,9 @@ For each file in the checklist:
 ## Progress Tracking
 
 - Total files to review: 39
-- Files reviewed: 29
-- Files cleaned: 29
-- Completion percentage: 74.36%
+- Files reviewed: 33
+- Files cleaned: 33
+- Completion percentage: 84.62%
 
 ## Notes
 
