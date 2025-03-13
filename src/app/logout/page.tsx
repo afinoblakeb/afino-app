@@ -6,6 +6,14 @@ import { Loader2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
+/**
+ * LogoutPage component handles the user logout process.
+ * It performs the following actions:
+ * 1. Clears the React Query cache to prevent queries with invalid auth state
+ * 2. Signs out the user using Supabase auth
+ * 3. Redirects to the sign-in page after successful logout
+ * 4. Displays appropriate error messages if logout fails
+ */
 export default function LogoutPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -15,26 +23,19 @@ export default function LogoutPage() {
   useEffect(() => {
     async function performLogout() {
       try {
-        console.log('[LogoutPage] Starting logout process');
-        
         // Clear React Query cache to prevent queries with invalid auth state
-        console.log('[LogoutPage] Clearing query cache');
         queryClient.clear();
         
         // Create Supabase client
         const supabase = createClient();
         
         // Call Supabase signOut method
-        console.log('[LogoutPage] Calling Supabase signOut method');
         const { error } = await supabase.auth.signOut();
         
         if (error) {
-          console.error('[LogoutPage] Error during sign out:', error);
           setError(`Error signing out: ${error.message}`);
           return;
         }
-        
-        console.log('[LogoutPage] Logout successful, redirecting to signin');
         
         // Redirect to signin page after successful logout
         // Use a small delay to ensure everything is cleaned up
@@ -43,8 +44,8 @@ export default function LogoutPage() {
           router.refresh();
         }, 800);
         
-      } catch (err) {
-        console.error('[LogoutPage] Unexpected error during logout:', err);
+      } catch {
+        // Catch any unexpected errors
         setError('An unexpected error occurred during logout');
       }
     }
@@ -52,7 +53,7 @@ export default function LogoutPage() {
     performLogout();
   }, [router, queryClient]);
   
-  // Use a full-screen layout that matches MainLayout loading screens
+  // Display error state if logout fails
   if (error) {
     return (
       <div className="flex h-screen items-center justify-center">

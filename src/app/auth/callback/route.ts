@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
 /**
- * Handles the OAuth callback route
- * Provides a minimal page that allows Supabase's auto-detection to handle the code exchange
+ * Handles the OAuth callback route for authentication.
+ * This route is called by Supabase after a user completes the OAuth flow.
+ * It exchanges the authorization code for a session and redirects the user
+ * to the appropriate page based on the environment.
+ * 
+ * @param request - The incoming request object containing the authorization code
+ * @returns A redirect response to either the next URL or an error page
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -26,5 +31,6 @@ export async function GET(request: Request) {
     }
   }
 
+  // Redirect to error page if code exchange fails
   return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 } 

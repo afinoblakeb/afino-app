@@ -21,8 +21,8 @@ This document outlines a systematic approach to clean up authentication-related 
 - [x] `src/utils/supabase/client.ts` - Contains debug logging for localStorage operations
 - [x] `src/utils/supabase/api-client.ts` - Contains console logging for API client creation
 - [x] `src/utils/supabase/server.ts` - May contain unused code
-- [ ] `src/app/logout/page.tsx` - Contains console logging for logout process
-- [ ] `src/app/auth/callback/route.ts` - Handles OAuth callback
+- [x] `src/app/logout/page.tsx` - Contains console logging for logout process
+- [x] `src/app/auth/callback/route.ts` - Handles OAuth callback
 
 ### Authentication Components
 
@@ -117,7 +117,8 @@ For each file in the checklist:
    - [x] `src/utils/supabase/client.ts`
    - [x] `src/utils/supabase/api-client.ts`
    - [x] `src/utils/supabase/server.ts`
-   - Other core files
+   - [x] `src/app/logout/page.tsx`
+   - [x] `src/app/auth/callback/route.ts`
 
 2. Continue with components, pages, and utilities
 
@@ -126,9 +127,9 @@ For each file in the checklist:
 ## Progress Tracking
 
 - Total files to review: 39
-- Files reviewed: 5
-- Files cleaned: 5
-- Completion percentage: 12.82%
+- Files reviewed: 7
+- Files cleaned: 7
+- Completion percentage: 17.95%
 
 ## Notes
 
