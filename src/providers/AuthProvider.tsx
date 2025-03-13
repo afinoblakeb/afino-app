@@ -17,6 +17,11 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * AuthProvider manages authentication state throughout the application.
+ * It handles session checking, auth state changes, and sign out functionality.
+ * This provider should wrap any components that need access to authentication state.
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -27,39 +32,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   
   // Create a Supabase client for browser environment
-  // Unlike before, we don't need a useRef because we're using a function to get a fresh client
-  // This ensures we always have the latest configuration
+  // Using a function to get a fresh client ensures we always have the latest configuration
   const getSupabase = () => createClient();
   
   useEffect(() => {
-    console.log('[AuthProvider] Initial session check');
-    
     const checkSession = async () => {
       setIsLoading(true);
       
       try {
         const supabase = getSupabase();
-        console.log('[AuthProvider] Fetching session from Supabase');
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('[AuthProvider] Session check error:', error);
           setIsAuthenticated(false);
           return;
         }
         
-        console.log(
-          '[AuthProvider] Session check result:', 
-          !!data.session, 
-          'User ID:', 
-          data.session?.user?.id || 'none'
-        );
-        
         setSession(data.session);
         setUser(data.session?.user || null);
         setIsAuthenticated(!!data.session);
-      } catch (error) {
-        console.error('[AuthProvider] Error checking session:', error);
+      } catch {
+        // Catch any unexpected errors and set not authenticated
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
@@ -70,19 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkSession();
 
     // Set up auth state change listener
-    console.log('[AuthProvider] Setting up auth state change listener');
     const supabase = getSupabase();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log(
-          '[AuthProvider] Auth state changed:', 
-          event, 
-          'Session exists:', 
-          !!currentSession, 
-          'User ID:', 
-          currentSession?.user?.id || 'none'
-        );
-        
         if (event === 'SIGNED_OUT') {
           // Clear auth state on sign out
           setSession(null);
@@ -90,7 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAuthenticated(false);
           
           // Clear all queries on sign out
-          console.log('[AuthProvider] Clearing query cache on sign out');
           queryClient.clear();
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           // Update session state for these events
@@ -100,7 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // Invalidate queries on sign in to refresh data
           if (event === 'SIGNED_IN') {
-            console.log('[AuthProvider] Invalidating queries on sign in');
             queryClient.invalidateQueries();
           }
         }
@@ -111,24 +92,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Clean up the subscription when the component unmounts
     return () => {
-      console.log('[AuthProvider] Cleaning up auth state change listener');
       subscription.unsubscribe();
     };
   }, [queryClient]);
 
+  /**
+   * Signs the user out by redirecting to the logout page.
+   * The actual logout process is handled in the logout page component.
+   */
   const signOut = async () => {
-    console.log('[AuthProvider] Sign out initiated');
-    
     // Set logging out state to true immediately
     setIsLoggingOut(true);
     
     try {
-      // Simply redirect to the logout page
-      // The actual logout process will be handled there
-      console.log('[AuthProvider] Redirecting to logout page');
+      // Redirect to the logout page where the actual logout process is handled
       router.push('/logout');
-    } catch (error) {
-      console.error('[AuthProvider] Error during sign out redirect:', error);
+    } catch {
       // If there's an error with the redirect, reset the logging out state
       setIsLoggingOut(false);
     }
@@ -146,6 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/**
+ * Hook to access the authentication context.
+ * Must be used within an AuthProvider component.
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
