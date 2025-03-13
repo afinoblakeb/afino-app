@@ -1,5 +1,7 @@
-// This file is being deprecated - we're using src/utils/supabase/client.ts instead
-// Keeping this for backward compatibility but ensuring it has consistent settings
+/**
+ * @deprecated This file is deprecated - use src/utils/supabase/client.ts instead
+ * Kept for backward compatibility but will be removed in a future version
+ */
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -15,8 +17,6 @@ if (!supabaseAnonKey) {
   throw new Error('[Supabase Browser] Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable');
 }
 
-console.log('[Supabase Browser] Creating legacy browser client from supabase-browser.ts');
-
 // Browser client with enhanced configuration
 // Using same settings as our main client.ts file
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -27,6 +27,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce',
     debug: process.env.NODE_ENV === 'development',
   },
-});
-
-console.log('[Supabase Browser] Legacy browser client created'); 
+}); 

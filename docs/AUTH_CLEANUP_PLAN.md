@@ -42,10 +42,10 @@ This document outlines a systematic approach to clean up authentication-related 
 
 ### Authentication Utilities
 
-- [ ] `src/utils/auth/redirects.ts` - Contains extensive console logging
-- [ ] `src/lib/supabase.ts` - Contains deprecated code with comments
-- [ ] `src/lib/supabase-browser.ts` - Contains deprecated code with comments
-- [ ] `src/lib/get-server-session.ts` - Check for unnecessary code
+- [x] `src/utils/auth/redirects.ts` - Contains extensive console logging
+- [x] `src/lib/supabase.ts` - Contains deprecated code with comments
+- [x] `src/lib/supabase-browser.ts` - Contains deprecated code with comments
+- [x] `src/lib/get-server-session.ts` - Check for unnecessary code
 
 ### API Routes with Authentication
 
@@ -132,9 +132,9 @@ For each file in the checklist:
 ## Progress Tracking
 
 - Total files to review: 39
-- Files reviewed: 17
-- Files cleaned: 17
-- Completion percentage: 43.59%
+- Files reviewed: 21
+- Files cleaned: 21
+- Completion percentage: 53.85%
 
 ## Notes
 
