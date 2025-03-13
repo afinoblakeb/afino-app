@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 // Form validation schema
 const resetPasswordSchema = z.object({
@@ -21,6 +21,11 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
+/**
+ * ResetPasswordForm component provides a form for users to set a new password.
+ * It handles form validation, submission, and displays appropriate feedback.
+ * The component uses Supabase authentication for password update functionality.
+ */
 export default function ResetPasswordForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -39,12 +44,19 @@ export default function ResetPasswordForm() {
     },
   });
 
+  /**
+   * Handles form submission for password reset
+   * @param data - Form data containing new password and confirmation
+   */
   const onSubmit = async (data: ResetPasswordFormValues) => {
     setIsLoading(true);
     setFormError(null);
     setFormSuccess(null);
 
     try {
+      // Create Supabase client
+      const supabase = createClient();
+      
       // Update password with Supabase
       const { error } = await supabase.auth.updateUser({
         password: data.password,
@@ -61,9 +73,8 @@ export default function ResetPasswordForm() {
       setTimeout(() => {
         router.push('/auth/signin');
       }, 2000);
-    } catch (error) {
+    } catch {
       setFormError('An unexpected error occurred. Please try again.');
-      console.error('Password reset error:', error);
     } finally {
       setIsLoading(false);
     }

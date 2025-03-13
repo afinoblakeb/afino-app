@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 // Form validation schema
 const forgotPasswordSchema = z.object({
@@ -14,6 +14,11 @@ const forgotPasswordSchema = z.object({
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
+/**
+ * ForgotPasswordForm component provides a form for users to request a password reset.
+ * It handles form validation, submission, and displays appropriate feedback.
+ * The component uses Supabase authentication for password reset functionality.
+ */
 export default function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -30,6 +35,10 @@ export default function ForgotPasswordForm() {
     },
   });
 
+  /**
+   * Handles form submission for password reset request
+   * @param data - Form data containing email
+   */
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     setIsLoading(true);
     setFormError(null);
@@ -39,6 +48,9 @@ export default function ForgotPasswordForm() {
       // Get the current URL for the redirect
       const origin = window.location.origin;
       const redirectTo = `${origin}/auth/reset-password`;
+      
+      // Create Supabase client
+      const supabase = createClient();
 
       // Request password reset with Supabase
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
@@ -51,9 +63,8 @@ export default function ForgotPasswordForm() {
       }
 
       setFormSuccess('Password reset email sent! Please check your inbox.');
-    } catch (error) {
+    } catch {
       setFormError('An unexpected error occurred. Please try again.');
-      console.error('Password reset error:', error);
     } finally {
       setIsLoading(false);
     }

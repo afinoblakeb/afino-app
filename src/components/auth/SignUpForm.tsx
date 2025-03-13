@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { getRedirectUrl } from '@/utils/auth/redirects';
 
 // Form validation schema
@@ -23,6 +23,11 @@ const signUpSchema = z.object({
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
 
+/**
+ * SignUpForm component provides a user registration form.
+ * It handles form validation, submission, and displays appropriate feedback.
+ * The component uses Supabase authentication for user registration.
+ */
 export default function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -41,6 +46,10 @@ export default function SignUpForm() {
     },
   });
 
+  /**
+   * Handles form submission for user registration
+   * @param data - Form data containing email and password
+   */
   const onSubmit = async (data: SignUpFormValues) => {
     setIsLoading(true);
     setFormError(null);
@@ -49,6 +58,9 @@ export default function SignUpForm() {
     try {
       // Use our dynamic redirect URL utility
       const redirectTo = getRedirectUrl('/auth/verify');
+      
+      // Create Supabase client
+      const supabase = createClient();
 
       // Sign up with Supabase
       const { data: userData, error } = await supabase.auth.signUp({
@@ -67,9 +79,8 @@ export default function SignUpForm() {
       if (userData?.user) {
         setFormSuccess('Verification email sent! Please check your inbox.');
       }
-    } catch (error) {
+    } catch {
       setFormError('An unexpected error occurred. Please try again.');
-      console.error('Sign up error:', error);
     } finally {
       setIsLoading(false);
     }
