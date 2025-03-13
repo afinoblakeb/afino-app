@@ -1,25 +1,33 @@
 import { createBrowserClient } from '@supabase/ssr';
 
+/**
+ * Custom storage adapter for Supabase authentication.
+ * Provides methods to interact with localStorage while ensuring
+ * it only runs in browser environments.
+ */
 export const customStorageAdapter = {
   getItem: (key: string) => {
     if (typeof window === 'undefined') return null;
-    console.log('getItem', key, globalThis.localStorage.getItem(key));
     return globalThis.localStorage.getItem(key);
   },
   setItem: (key: string, value: string) => {
     if (typeof window !== 'undefined') {
-      console.log('setItem', key, value, globalThis.localStorage.setItem(key, value));
       globalThis.localStorage.setItem(key, value);
     }
   },
   removeItem: (key: string) => {
     if (typeof window !== 'undefined') {
-      console.log('removeItem', key, globalThis.localStorage.removeItem(key));
       globalThis.localStorage.removeItem(key);
     }
   },
 };
 
+/**
+ * Creates a Supabase client for browser environments.
+ * Uses PKCE (Proof Key for Code Exchange) flow for secure authentication.
+ * 
+ * @returns A configured Supabase browser client
+ */
 export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
