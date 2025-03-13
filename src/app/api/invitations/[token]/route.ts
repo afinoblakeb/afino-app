@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/get-server-session';
+import { createClient } from '@/utils/supabase/server';
 import { validateInvitationToken, updateInvitationStatus } from '@/services/invitationService';
 import { addUserToOrganization } from '@/services/organizationService';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/utils/database/prisma';
 import { Invitation, Organization, Role, User } from '@prisma/client';
 
 // Define a type for the invitation with includes
@@ -84,8 +84,10 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await getServerSession();
+    // Check authentication using the new Supabase client
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -164,8 +166,10 @@ export async function DELETE(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await getServerSession();
+    // Check authentication using the new Supabase client
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

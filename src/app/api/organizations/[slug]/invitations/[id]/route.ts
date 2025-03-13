@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/get-server-session';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/utils/supabase/server';
+import { prisma } from '@/utils/database/prisma';
 import { getOrganizationBySlug } from '@/services/organizationService';
 import { 
   deleteInvitation, 
@@ -13,8 +13,10 @@ export async function DELETE(
   { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await getServerSession();
+    // Check authentication using the new Supabase client
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -74,8 +76,10 @@ export async function PUT(
   { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await getServerSession();
+    // Check authentication using the new Supabase client
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

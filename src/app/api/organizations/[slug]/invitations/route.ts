@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/get-server-session';
+import { prisma } from '@/utils/database/prisma';
+import { createClient } from '@/utils/supabase/server';
 import { createInvitation, getOrganizationInvitations } from '@/services/invitationService';
 import { getOrganizationBySlug } from '@/services/organizationService';
 import { getOrCreateMemberRoleForOrganization } from '@/services/roleService';
@@ -18,8 +18,10 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await getServerSession();
+    // Check authentication using the new Supabase client
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -67,8 +69,10 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await getServerSession();
+    // Check authentication using the new Supabase client
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
