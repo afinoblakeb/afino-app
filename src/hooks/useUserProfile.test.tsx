@@ -1,3 +1,7 @@
+/**
+ * Tests for the useUserProfile hook
+ * Verifies data fetching, error handling, and the enabled flag functionality
+ */
 import { renderHook, waitFor } from '@testing-library/react';
 import { useUserProfile } from './useUserProfile';
 import { http, HttpResponse } from 'msw';
@@ -17,6 +21,9 @@ describe('useUserProfile', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests successful data fetching from the API
+   */
   it('should fetch user profile data successfully', async () => {
     // Define the mock response
     server.use(
@@ -50,6 +57,9 @@ describe('useUserProfile', () => {
     });
   });
 
+  /**
+   * Tests error handling when the API request fails
+   */
   it('should handle API errors gracefully', async () => {
     // Define the mock error response
     server.use(
@@ -76,6 +86,9 @@ describe('useUserProfile', () => {
     );
   });
 
+  /**
+   * Tests that the hook respects the enabled flag
+   */
   it('should respect the enabled flag', async () => {
     // Render the hook with enabled set to false
     const { result } = renderHook(() => useUserProfile(false), {

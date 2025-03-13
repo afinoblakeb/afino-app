@@ -1,16 +1,20 @@
+/**
+ * Tests for the SignUpForm component
+ * Verifies form rendering, validation, submission, and error handling
+ */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SignUpForm from '../SignUpForm';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 // Mock the supabase client
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+jest.mock('@/utils/supabase/client', () => ({
+  createClient: jest.fn(() => ({
     auth: {
       signUp: jest.fn(),
     },
-  },
+  })),
 }));
 
 describe('SignUpForm', () => {
@@ -18,6 +22,9 @@ describe('SignUpForm', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests that the SignUpForm renders all expected elements
+   */
   it('renders the sign-up form correctly', () => {
     render(<SignUpForm />);
     
@@ -30,6 +37,9 @@ describe('SignUpForm', () => {
     expect(screen.getByRole('link', { name: /sign in/i })).toBeInTheDocument();
   });
 
+  /**
+   * Tests form validation for required fields
+   */
   it('validates form inputs', async () => {
     render(<SignUpForm />);
     
@@ -44,6 +54,9 @@ describe('SignUpForm', () => {
     });
   });
 
+  /**
+   * Tests password confirmation validation
+   */
   it('validates password confirmation', async () => {
     render(<SignUpForm />);
     
@@ -62,12 +75,20 @@ describe('SignUpForm', () => {
     });
   });
 
+  /**
+   * Tests successful form submission with valid data
+   */
   it('submits the form with valid data', async () => {
     // Mock successful sign-up
-    (supabase.auth.signUp as jest.Mock).mockResolvedValue({
-      data: { user: { id: '123' } },
-      error: null,
-    });
+    const mockSupabase = {
+      auth: {
+        signUp: jest.fn().mockResolvedValue({
+          data: { user: { id: '123' } },
+          error: null,
+        }),
+      },
+    };
+    (createClient as jest.Mock).mockReturnValue(mockSupabase);
     
     render(<SignUpForm />);
     
@@ -82,7 +103,7 @@ describe('SignUpForm', () => {
     
     // Check if supabase.auth.signUp was called with correct arguments
     await waitFor(() => {
-      expect(supabase.auth.signUp).toHaveBeenCalledWith({
+      expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: 'password123',
         options: {
@@ -97,12 +118,20 @@ describe('SignUpForm', () => {
     });
   });
 
+  /**
+   * Tests error handling when sign-up fails
+   */
   it('handles sign-up error', async () => {
     // Mock sign-up error
-    (supabase.auth.signUp as jest.Mock).mockResolvedValue({
-      data: { user: null },
-      error: { message: 'Email already registered' },
-    });
+    const mockSupabase = {
+      auth: {
+        signUp: jest.fn().mockResolvedValue({
+          data: { user: null },
+          error: { message: 'Email already registered' },
+        }),
+      },
+    };
+    (createClient as jest.Mock).mockReturnValue(mockSupabase);
     
     render(<SignUpForm />);
     

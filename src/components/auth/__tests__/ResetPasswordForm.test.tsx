@@ -1,16 +1,20 @@
+/**
+ * Tests for the ResetPasswordForm component
+ * Verifies form rendering, validation, submission, and error handling
+ */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ResetPasswordForm from '../ResetPasswordForm';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 // Mock the supabase client
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+jest.mock('@/utils/supabase/client', () => ({
+  createClient: jest.fn(() => ({
     auth: {
       updateUser: jest.fn(),
     },
-  },
+  })),
 }));
 
 // Mock useRouter
@@ -26,6 +30,9 @@ describe('ResetPasswordForm', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests that the ResetPasswordForm renders all expected elements
+   */
   it('renders the reset password form correctly', () => {
     render(<ResetPasswordForm />);
     
@@ -35,6 +42,9 @@ describe('ResetPasswordForm', () => {
     expect(screen.getByRole('button', { name: /reset password/i })).toBeInTheDocument();
   });
 
+  /**
+   * Tests form validation for required fields
+   */
   it('validates form inputs', async () => {
     render(<ResetPasswordForm />);
     
@@ -49,6 +59,9 @@ describe('ResetPasswordForm', () => {
     });
   });
 
+  /**
+   * Tests password strength validation
+   */
   it('validates password strength', async () => {
     render(<ResetPasswordForm />);
     
@@ -66,6 +79,9 @@ describe('ResetPasswordForm', () => {
     });
   });
 
+  /**
+   * Tests password confirmation validation
+   */
   it('validates password confirmation', async () => {
     render(<ResetPasswordForm />);
     
@@ -83,12 +99,20 @@ describe('ResetPasswordForm', () => {
     });
   });
 
+  /**
+   * Tests successful form submission with valid data
+   */
   it('submits the form with valid data', async () => {
     // Mock successful password update
-    (supabase.auth.updateUser as jest.Mock).mockResolvedValue({
-      data: { user: { id: '123' } },
-      error: null,
-    });
+    const mockSupabase = {
+      auth: {
+        updateUser: jest.fn().mockResolvedValue({
+          data: { user: { id: '123' } },
+          error: null,
+        }),
+      },
+    };
+    (createClient as jest.Mock).mockReturnValue(mockSupabase);
     
     render(<ResetPasswordForm />);
     
@@ -102,18 +126,26 @@ describe('ResetPasswordForm', () => {
     
     // Check if supabase.auth.updateUser was called with correct arguments
     await waitFor(() => {
-      expect(supabase.auth.updateUser).toHaveBeenCalledWith({
+      expect(mockSupabase.auth.updateUser).toHaveBeenCalledWith({
         password: 'password123',
       });
     });
   });
 
+  /**
+   * Tests error handling when password update fails
+   */
   it('handles update password error', async () => {
     // Mock update password error
-    (supabase.auth.updateUser as jest.Mock).mockResolvedValue({
-      data: { user: null },
-      error: { message: 'Invalid reset token' },
-    });
+    const mockSupabase = {
+      auth: {
+        updateUser: jest.fn().mockResolvedValue({
+          data: { user: null },
+          error: { message: 'Invalid reset token' },
+        }),
+      },
+    };
+    (createClient as jest.Mock).mockReturnValue(mockSupabase);
     
     render(<ResetPasswordForm />);
     

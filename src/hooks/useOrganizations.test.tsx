@@ -1,3 +1,7 @@
+/**
+ * Tests for the useOrganizations hook
+ * Verifies data fetching, error handling, and behavior with different user IDs
+ */
 import { renderHook, waitFor } from '@testing-library/react';
 import { useOrganizations } from './useOrganizations';
 import { http, HttpResponse } from 'msw';
@@ -17,6 +21,9 @@ describe('useOrganizations', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests successful data fetching from the API
+   */
   it('should fetch organizations data successfully', async () => {
     // Define the mock response
     server.use(
@@ -72,6 +79,9 @@ describe('useOrganizations', () => {
     ]);
   });
 
+  /**
+   * Tests error handling when the API request fails
+   */
   it('should handle API errors gracefully', async () => {
     // Define the mock error response
     server.use(
@@ -98,6 +108,9 @@ describe('useOrganizations', () => {
     );
   });
 
+  /**
+   * Tests behavior when userId is undefined
+   */
   it('should return empty array when userId is undefined', async () => {
     // Render the hook with undefined userId
     const { result } = renderHook(() => useOrganizations(), {
@@ -109,6 +122,9 @@ describe('useOrganizations', () => {
     expect(result.current.isFetched).toBe(false);
   });
 
+  /**
+   * Tests that different userIds use different cache entries
+   */
   it('should use different cache entries for different userIds', async () => {
     // Define the mock responses for different users
     server.use(

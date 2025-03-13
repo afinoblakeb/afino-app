@@ -1,16 +1,20 @@
+/**
+ * Tests for the ForgotPasswordForm component
+ * Verifies form rendering, validation, submission, and error handling
+ */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ForgotPasswordForm from '../ForgotPasswordForm';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 // Mock the supabase client
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+jest.mock('@/utils/supabase/client', () => ({
+  createClient: jest.fn(() => ({
     auth: {
       resetPasswordForEmail: jest.fn(),
     },
-  },
+  })),
 }));
 
 describe('ForgotPasswordForm', () => {
@@ -18,6 +22,9 @@ describe('ForgotPasswordForm', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests that the ForgotPasswordForm renders all expected elements
+   */
   it('renders the forgot password form correctly', () => {
     render(<ForgotPasswordForm />);
     
@@ -27,6 +34,9 @@ describe('ForgotPasswordForm', () => {
     expect(screen.getByText(/back to sign in/i)).toBeInTheDocument();
   });
 
+  /**
+   * Tests form validation for required fields
+   */
   it('validates form inputs', async () => {
     render(<ForgotPasswordForm />);
     
@@ -40,6 +50,9 @@ describe('ForgotPasswordForm', () => {
     });
   });
 
+  /**
+   * Tests email format validation
+   */
   it('validates email format', async () => {
     render(<ForgotPasswordForm />);
     
@@ -56,12 +69,20 @@ describe('ForgotPasswordForm', () => {
     });
   });
 
+  /**
+   * Tests successful form submission with valid data
+   */
   it('submits the form with valid data', async () => {
     // Mock successful password reset
-    (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({
-      data: {},
-      error: null,
-    });
+    const mockSupabase = {
+      auth: {
+        resetPasswordForEmail: jest.fn().mockResolvedValue({
+          data: {},
+          error: null,
+        }),
+      },
+    };
+    (createClient as jest.Mock).mockReturnValue(mockSupabase);
     
     render(<ForgotPasswordForm />);
     
@@ -74,7 +95,7 @@ describe('ForgotPasswordForm', () => {
     
     // Check if supabase.auth.resetPasswordForEmail was called with correct arguments
     await waitFor(() => {
-      expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+      expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
         'test@example.com',
         expect.any(Object)
       );
@@ -86,12 +107,20 @@ describe('ForgotPasswordForm', () => {
     });
   });
 
+  /**
+   * Tests error handling when password reset fails
+   */
   it('handles reset password error', async () => {
     // Mock reset password error
-    (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({
-      data: null,
-      error: { message: 'Email not found' },
-    });
+    const mockSupabase = {
+      auth: {
+        resetPasswordForEmail: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Email not found' },
+        }),
+      },
+    };
+    (createClient as jest.Mock).mockReturnValue(mockSupabase);
     
     render(<ForgotPasswordForm />);
     

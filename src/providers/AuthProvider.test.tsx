@@ -1,3 +1,8 @@
+/**
+ * Tests for the AuthProvider component
+ * Verifies that the AuthProvider properly integrates with React Query hooks
+ * and handles authentication state changes correctly
+ */
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -36,6 +41,10 @@ describe('AuthProvider with React Query Integration', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * Tests that the AuthProvider properly integrates with React Query hooks
+   * by verifying loading states and data rendering
+   */
   it('should properly integrate with React Query hooks', async () => {
     // Mock the hooks to return loading state first, then data
     const mockUser = { id: 'user-1', name: 'Test User' };
@@ -102,6 +111,10 @@ describe('AuthProvider with React Query Integration', () => {
     expect(screen.getByTestId('orgs-count')).toHaveTextContent('Orgs: 1');
   });
 
+  /**
+   * Tests that the AuthProvider handles authentication state changes
+   * by invalidating and refetching data
+   */
   it('should handle auth state changes and refetch data', async () => {
     // Mock the hooks
     (useUserProfile as jest.Mock).mockReturnValue({
