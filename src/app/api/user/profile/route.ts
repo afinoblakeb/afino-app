@@ -12,7 +12,10 @@ const updateProfileSchema = z.object({
   bio: z.string().max(500).optional(),
 });
 
-// Get the current user's profile
+/**
+ * Get the current user's profile
+ * @route GET /api/user/profile
+ */
 export async function GET() {
   try {
     // Get the user session
@@ -56,8 +59,7 @@ export async function GET() {
       jobTitle: userData.jobTitle,
       bio: userData.bio,
     });
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch user profile' },
       { status: 500 }
@@ -65,7 +67,10 @@ export async function GET() {
   }
 }
 
-// Update the user's profile
+/**
+ * Update the user's profile
+ * @route PUT /api/user/profile
+ */
 export async function PUT(request: Request) {
   try {
     // Get the user session
@@ -130,8 +135,7 @@ export async function PUT(request: Request) {
       jobTitle: updatedUser.jobTitle,
       bio: updatedUser.bio,
     });
-  } catch (error) {
-    console.error('Error updating user profile:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to update user profile' },
       { status: 500 }

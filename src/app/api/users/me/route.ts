@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createApiSupabaseClient } from '@/utils/supabase/api-client';
 
-// Get the current user's profile
+/**
+ * Get the current user's profile
+ * @route GET /api/users/me
+ */
 export async function GET(request: Request) {
-  console.log('[API Users/Me] Processing user profile request');
-  
   try {
     // Get the user session with the new client approach
     const supabase = createApiSupabaseClient(request);
@@ -15,16 +16,12 @@ export async function GET(request: Request) {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError) {
-      console.error('[API Users/Me] Authentication error:', userError.message);
       return NextResponse.json({ error: 'Authentication failed', message: userError.message }, { status: 401 });
     }
     
     if (!user) {
-      console.error('[API Users/Me] No authenticated user found');
       return NextResponse.json({ error: 'Unauthorized', message: 'No authenticated user found' }, { status: 401 });
     }
-    
-    console.log(`[API Users/Me] Successfully authenticated user: ${user.id}`);
     
     try {
       // Get user profile from database
@@ -32,11 +29,8 @@ export async function GET(request: Request) {
         where: { id: user.id },
       });
       
-      console.log(`[API Users/Me] User profile exists in database: ${!!userProfile}`);
-      
       // If user profile doesn't exist in the database yet, create it
       if (!userProfile) {
-        console.log(`[API Users/Me] Creating new user profile for user: ${user.id}`);
         userProfile = await prisma.user.create({
           data: {
             id: user.id,
@@ -56,15 +50,13 @@ export async function GET(request: Request) {
         created_at: userProfile.createdAt || user.created_at,
         updated_at: userProfile.updatedAt || user.updated_at,
       });
-    } catch (dbError) {
-      console.error('[API Users/Me] Database error:', dbError);
+    } catch {
       return NextResponse.json(
         { error: 'Database error', message: 'Failed to fetch or create user profile' },
         { status: 500 }
       );
     }
-  } catch (error) {
-    console.error('[API Users/Me] Unexpected error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Server error', message: 'An unexpected error occurred' },
       { status: 500 }

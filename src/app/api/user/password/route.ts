@@ -14,7 +14,11 @@ const updatePasswordSchema = z.object({
     .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
 });
 
-// Update the user's password
+/**
+ * Update the user's password
+ * Validates the current password before updating to the new password
+ * @route PUT /api/user/password
+ */
 export async function PUT(request: Request) {
   try {
     // Get the user session
@@ -82,8 +86,7 @@ export async function PUT(request: Request) {
       success: true,
       message: 'Password updated successfully' 
     });
-  } catch (error) {
-    console.error('Error updating password:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to update password' },
       { status: 500 }

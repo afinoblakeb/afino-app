@@ -49,12 +49,12 @@ This document outlines a systematic approach to clean up authentication-related 
 
 ### API Routes with Authentication
 
-- [ ] `src/app/api/users/me/route.ts` - Contains console logging
-- [ ] `src/app/api/users/me/organizations/route.ts` - Contains console logging
-- [ ] `src/app/api/user/account/route.ts` - Contains console logging
-- [ ] `src/app/api/user/password/route.ts` - Check for unnecessary code
-- [ ] `src/app/api/user/profile/route.ts` - Check for unnecessary code
-- [ ] `src/app/api/organizations/join/route.ts` - Contains reference to deprecated `@supabase/auth-helpers-nextjs`
+- [x] `src/app/api/users/me/route.ts` - Contains console logging
+- [x] `src/app/api/users/me/organizations/route.ts` - Contains console logging
+- [x] `src/app/api/user/account/route.ts` - Contains console logging
+- [x] `src/app/api/user/password/route.ts` - Check for unnecessary code
+- [x] `src/app/api/user/profile/route.ts` - Check for unnecessary code
+- [x] `src/app/api/organizations/join/route.ts` - Contains reference to deprecated `@supabase/auth-helpers-nextjs`
 
 ### Hooks with Authentication Logic
 
@@ -132,9 +132,9 @@ For each file in the checklist:
 ## Progress Tracking
 
 - Total files to review: 39
-- Files reviewed: 21
-- Files cleaned: 21
-- Completion percentage: 53.85%
+- Files reviewed: 27
+- Files cleaned: 27
+- Completion percentage: 69.23%
 
 ## Notes
 

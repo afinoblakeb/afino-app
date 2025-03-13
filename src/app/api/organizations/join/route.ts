@@ -4,6 +4,11 @@ import { createClient } from '@/utils/supabase/client';
 import { addUserToOrganization, getOrganizationById } from '@/services/organizationService';
 import { getOrCreateMemberRoleForOrganization } from '@/services/roleService';
 
+/**
+ * Join an organization
+ * Adds the current user to the specified organization with member role
+ * @route POST /api/organizations/join
+ */
 export async function POST(request: Request) {
   try {
     const { organizationId } = await request.json();
@@ -43,8 +48,7 @@ export async function POST(request: Request) {
     await addUserToOrganization(user.id, organizationId, memberRole.id);
     
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error joining organization:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to join organization' },
       { status: 500 }
