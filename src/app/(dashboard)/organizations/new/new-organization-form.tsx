@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Loader2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { generateSlug, isValidSlug } from '@/utils/slugUtils';
 
 // Form validation schema
@@ -104,96 +110,113 @@ export default function NewOrganizationForm() {
 
   return (
     <div className="max-w-2xl mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Create New Organization</h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-6">Create New Organization</h1>
       
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Organization Details</h2>
-        <p className="text-gray-600 mb-6">Create a new organization to collaborate with your team.</p>
-        
-        {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">
-            {error}
-          </div>
-        )}
-        
-        {success && (
-          <div className="bg-green-100 text-green-700 p-3 rounded-md mb-4">
-            {success}
-          </div>
-        )}
-        
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Organization Name
-            </label>
-            <input
-              type="text"
-              {...form.register("name")}
-              onChange={handleNameChange}
-              placeholder="Acme Inc."
-              className="w-full p-2 border rounded-md"
-            />
-            {form.formState.errors.name && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.name.message}</p>
-            )}
-            <p className="text-gray-500 text-sm mt-1">This is the name of your organization.</p>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Organization URL
-            </label>
-            <div className="flex items-center">
-              <span className="text-gray-500 mr-2">app.afino.com/</span>
-              <input
-                type="text"
-                {...form.register("slug")}
-                placeholder="acme-inc"
-                className="w-full p-2 border rounded-md"
-              />
+      <Card>
+        <CardHeader>
+          <CardTitle>Organization Details</CardTitle>
+          <CardDescription>
+            Create a new organization to collaborate with your team.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md mb-6">
+              {error}
             </div>
-            {form.formState.errors.slug && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.slug.message}</p>
-            )}
-            <p className="text-gray-500 text-sm mt-1">This will be used for your organization&apos;s URL.</p>
-          </div>
+          )}
           
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Domain (Optional)
-            </label>
-            <input
-              type="text"
-              {...form.register("domain")}
-              placeholder="acme.com"
-              className="w-full p-2 border rounded-md"
-            />
-            {form.formState.errors.domain && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.domain.message}</p>
-            )}
-            <p className="text-gray-500 text-sm mt-1">The domain associated with your organization. Leave blank if none.</p>
-          </div>
+          {success && (
+            <div className="bg-green-100 text-green-700 p-3 rounded-md mb-6">
+              {success}
+            </div>
+          )}
           
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Organization'}
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              className="ml-4 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        onChange={handleNameChange}
+                        placeholder="Acme Inc." 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      This is the name of your organization.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="slug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization URL</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm text-muted-foreground">app.afino.com/</div>
+                        <Input 
+                          {...field}
+                          placeholder="acme-inc" 
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      This will be used for your organization&apos;s URL.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="domain"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Domain (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        placeholder="acme.com" 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      The domain associated with your organization. Leave blank if none.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Organization'
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter className="border-t px-6 py-4 flex justify-between">
+          <Button variant="ghost" onClick={() => window.history.back()}>
+            Cancel
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 } 
