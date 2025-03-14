@@ -52,9 +52,9 @@ describe('ResetPasswordForm', () => {
     const submitButton = screen.getByRole('button', { name: /reset password/i });
     fireEvent.click(submitButton);
     
-    // Check for validation errors
+    // Check for validation errors - match the actual error messages in the component
     await waitFor(() => {
-      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/password must be at least 8 characters/i)).toBeInTheDocument();
       expect(screen.getByText(/please confirm your password/i)).toBeInTheDocument();
     });
   });

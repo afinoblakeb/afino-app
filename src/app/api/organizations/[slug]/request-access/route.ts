@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/utils/database/prisma';
 import { randomUUID } from 'crypto';
 
 export async function POST(

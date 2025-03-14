@@ -109,8 +109,22 @@ export function AppSidebar({
     'Secondary Section': false,
   });
 
+  // Update userOrganizations when the organizations prop changes
+  useEffect(() => {
+    if (organizations && organizations.length > 0) {
+      setUserOrganizations(organizations);
+    }
+  }, [organizations]);
+
   // Fetch real organizations from the API - but only once during initial load
   useEffect(() => {
+    const hasOrganizationsData = userOrganizations.length > 0;
+    
+    // Skip fetching if we already have organization data from props
+    if (hasOrganizationsData) {
+      return;
+    }
+    
     async function fetchOrganizations() {
       try {
         const response = await fetch('/api/users/me/organizations', {
@@ -140,12 +154,10 @@ export function AppSidebar({
       }
     }
     
-    // Only fetch if we have no organization data yet
-    if (userOrganizations.length === 0 || userOrganizations.length !== organizations.length) {
-      fetchOrganizations();
-    }
+    // Fetch organizations on mount to ensure we have the latest data
+    fetchOrganizations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array means this only runs once
+  }, []);
 
   const toggleExpanded = (key: string) => {
     setExpanded((prev) => ({

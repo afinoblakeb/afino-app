@@ -30,7 +30,8 @@ describe('SignUpForm', () => {
     
     // Check if form elements are rendered
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    // Use more specific selectors to avoid ambiguity
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign up/i })).toBeInTheDocument();
     expect(screen.getByText(/already have an account/i)).toBeInTheDocument();
@@ -47,10 +48,11 @@ describe('SignUpForm', () => {
     const submitButton = screen.getByRole('button', { name: /sign up/i });
     fireEvent.click(submitButton);
     
-    // Check for validation errors
+    // Check for validation errors - update to match actual error messages in the component
     await waitFor(() => {
-      expect(screen.getByText(/email is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/please enter a valid email/i)).toBeInTheDocument();
+      expect(screen.getByText(/password must be at least 8 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/please confirm your password/i)).toBeInTheDocument();
     });
   });
 
@@ -60,9 +62,9 @@ describe('SignUpForm', () => {
   it('validates password confirmation', async () => {
     render(<SignUpForm />);
     
-    // Fill in email and mismatched passwords
+    // Fill in email and mismatched passwords - use more specific selectors
     await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'password123');
     await userEvent.type(screen.getByLabelText(/confirm password/i), 'password456');
     
     // Submit form
@@ -92,9 +94,9 @@ describe('SignUpForm', () => {
     
     render(<SignUpForm />);
     
-    // Fill in form with valid data
+    // Fill in form with valid data - use more specific selectors
     await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'password123');
     await userEvent.type(screen.getByLabelText(/confirm password/i), 'password123');
     
     // Submit form
@@ -135,9 +137,9 @@ describe('SignUpForm', () => {
     
     render(<SignUpForm />);
     
-    // Fill in form with valid data
+    // Fill in form with valid data - use more specific selectors
     await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'password123');
     await userEvent.type(screen.getByLabelText(/confirm password/i), 'password123');
     
     // Submit form

@@ -72,9 +72,9 @@ export async function POST(request: Request) {
     
     // Check if domain is already in use (if a domain is provided)
     if (orgDomain) {
-      console.log('Checking domain:', orgDomain);
+
       const existingOrgWithDomain = await findOrganizationByDomain(orgDomain);
-      console.log('Existing org with domain:', existingOrgWithDomain);
+
       
       if (existingOrgWithDomain) {
         return NextResponse.json(

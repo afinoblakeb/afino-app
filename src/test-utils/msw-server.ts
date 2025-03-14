@@ -55,6 +55,6 @@ export const createEmptyResponseHandler = (path: string) => {
 export const createDelayedResponseHandler = (path: string, delayMs = 1000) => {
   return http.get(path, async () => {
     await new Promise(resolve => setTimeout(resolve, delayMs));
-    return HttpResponse.json({ message: 'Delayed response' }, { status: 200 });
+    return HttpResponse.json({}, { status: 200 });
   });
 }; 

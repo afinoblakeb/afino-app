@@ -50,36 +50,6 @@ export const renderWithQueryClient = (ui: React.ReactElement) => {
 };
 
 /**
- * Simulates a tab visibility change
- */
-export const simulateVisibilityChange = (isVisible: boolean) => {
-  Object.defineProperty(document, 'visibilityState', {
-    value: isVisible ? 'visible' : 'hidden',
-    configurable: true,
-  });
-  document.dispatchEvent(new Event('visibilitychange'));
-};
-
-/**
- * Simulates a rapid series of tab visibility changes
- */
-export const simulateRapidVisibilityChanges = (count: number = 5, intervalMs: number = 100) => {
-  return new Promise<void>((resolve) => {
-    let i = 0;
-    const interval = setInterval(() => {
-      const isVisible = i % 2 === 0;
-      simulateVisibilityChange(isVisible);
-      i++;
-      
-      if (i >= count * 2) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, intervalMs);
-  });
-};
-
-/**
  * Waits for a specified duration
  */
 export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)); 

@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppSidebar } from './Sidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -33,22 +33,66 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { data: userProfile, isLoading: isProfileLoading } = useUserProfile(isAuthenticated);
 
   // Fetch organizations using React Query - only if we have a user profile
-  const { data: organizations, isLoading: isOrgsLoading } = useOrganizations(userProfile?.id);
+  const { data: organizations, isLoading: isOrgsLoading, refetch: refetchOrganizations } = useOrganizations(userProfile?.id);
 
   // Set current organization to first one by default, but initialize as null
   const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
+  
+  // Create a flag to track if this is the initial mount
+  const isInitialMount = useRef(true);
+
+  // Refetch organizations when the component mounts or when the pathname changes
+  // This ensures we have the latest data after creating a new organization
+  useEffect(() => {
+    // Only refetch if this is not the initial mount and we have a user profile
+    if (!isInitialMount.current && isAuthenticated && userProfile?.id) {
+      // Extract the organization slug from the pathname if it exists
+      const pathSlug = pathname?.includes('/organizations/') 
+        ? pathname.split('/organizations/')[1]?.split('/')[0]
+        : null;
+      
+      // Only refetch if we're on an organization page and the slug doesn't match any current organization
+      if (pathSlug && organizations && !organizations.some(org => org.slug === pathSlug)) {
+        refetchOrganizations();
+      }
+    }
+    
+    // Mark that we've passed the initial mount
+    isInitialMount.current = false;
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // Update current organization when organizations data loads
   useEffect(() => {
-    if (organizations && organizations.length > 0 && !currentOrganization) {
-      setCurrentOrganization({
-        id: organizations[0].id || '',
-        name: organizations[0].name || 'Organization',
-        slug: organizations[0].slug || '',
-        logoUrl: '',
-      });
+    if (organizations && organizations.length > 0) {
+      // If we have a slug in the pathname, try to find that organization
+      if (pathname?.includes('/organizations/')) {
+        const slug = pathname.split('/organizations/')[1]?.split('/')[0];
+        const matchingOrg = organizations.find(org => org.slug === slug);
+        
+        if (matchingOrg) {
+          setCurrentOrganization({
+            id: matchingOrg.id || '',
+            name: matchingOrg.name || 'Organization',
+            slug: matchingOrg.slug || '',
+            logoUrl: '',
+          });
+          return;
+        }
+      }
+      
+      // If no matching org found or not on an org page, use the first one
+      if (!currentOrganization || !organizations.some(org => org.id === currentOrganization.id)) {
+        setCurrentOrganization({
+          id: organizations[0].id || '',
+          name: organizations[0].name || 'Organization',
+          slug: organizations[0].slug || '',
+          logoUrl: '',
+        });
+      }
     }
-  }, [organizations, currentOrganization]);
+  }, [organizations, pathname, currentOrganization]);
 
   const mappedUserProfile = userProfile
     ? {

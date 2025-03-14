@@ -6,12 +6,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { generateSlug, isValidSlug } from '@/utils/slugUtils';
+import { invalidateOrganizationsCache } from '@/utils/queryUtils';
+import { useAuth } from '@/providers/AuthProvider';
 
 // Form validation schema
 const organizationFormSchema = z.object({
@@ -34,6 +37,8 @@ type OrganizationFormValues = z.infer<typeof organizationFormSchema>;
 
 export default function NewOrganizationForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
@@ -113,6 +118,13 @@ export default function NewOrganizationForm() {
       
       if (!response.ok) {
         throw new Error(responseData.error || 'Failed to create organization');
+      }
+
+      // Invalidate the organizations cache to force a refetch
+      if (user?.id) {
+        invalidateOrganizationsCache(queryClient, user.id);
+      } else {
+        invalidateOrganizationsCache(queryClient);
       }
 
       // Redirect to the new organization's dashboard
